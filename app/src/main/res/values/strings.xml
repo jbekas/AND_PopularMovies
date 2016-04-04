@@ -1,7 +1,20 @@
 <resources>
     <string name="app_name">Popular Movies</string>
+    <string name="title_activity_settings">Settings</string>
 
     <!-- Actions -->
     <string name="action_settings">Settings</string>
 
+    <!-- Sort Setting -->
+    <!-- Label for the location preference [CHAR LIMIT=30] -->
+    <string name="pref_sort_label">Sort Order</string>
+
+    <!-- Key name for storing location in SharedPreferences [CHAR LIMIT=NONE] -->
+    <string name="pref_sort_key" translatable="false">sort_order</string>
+
+    <!-- Default postal code for location preference [CHAR LIMIT=NONE] -->
+    <string name="pref_sort_default">most_popular</string>
+
+    <string name="most_popular">Most Popular</string>
+    <string name="highest_rated">Highest Rated</string>
 </resources>
