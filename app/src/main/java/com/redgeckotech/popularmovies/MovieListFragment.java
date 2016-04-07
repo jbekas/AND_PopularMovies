@@ -34,6 +34,10 @@ import timber.log.Timber;
  */
 public class MovieListFragment extends Fragment {
 
+    public static final String MOVIES = "MOVIES";
+    public static final String QUERY_TYPE = "QUERY_TYPE";
+    public static final String PAGE_NUMBER = "PAGE_NUMBER";
+
     // Dependency injection points
     @Inject MovieService mMovieService;
     @Inject Picasso mPicasso;
@@ -45,7 +49,7 @@ public class MovieListFragment extends Fragment {
     private OnListFragmentInteractionListener mListener;
 
     private MyMovieListRecyclerViewAdapter mAdapter;
-    private final List<Movie> mMovies = new ArrayList<Movie>();
+    private final ArrayList<Movie> mMovies = new ArrayList<>();
 
     private String mQueryType;
     private int mPage;
@@ -74,8 +78,15 @@ public class MovieListFragment extends Fragment {
         // Dependency injection
         ((MoviesApplication) getActivity().getApplicationContext()).getApplicationComponent().inject(this);
 
-        if (getArguments() != null) {
-            mColumnCount = getArguments().getInt(ARG_COLUMN_COUNT);
+        if (savedInstanceState != null) {
+            List<Movie> movies = savedInstanceState.getParcelableArrayList(MOVIES);
+            mMovies.addAll(movies);
+            mQueryType = savedInstanceState.getString(QUERY_TYPE);
+            mPage = savedInstanceState.getInt(PAGE_NUMBER);
+        } else {
+            if (getArguments() != null) {
+                mColumnCount = getArguments().getInt(ARG_COLUMN_COUNT);
+            }
         }
     }
 
@@ -142,6 +153,15 @@ public class MovieListFragment extends Fragment {
             mPage = 1;
             updateMovieList();
         }
+    }
+
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+
+        outState.putParcelableArrayList(MOVIES, mMovies);
+        outState.putString(QUERY_TYPE, mQueryType);
+        outState.putInt(PAGE_NUMBER, mPage);
     }
 
     public void updateMovieList() {
