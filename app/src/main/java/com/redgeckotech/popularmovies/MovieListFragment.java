@@ -86,7 +86,23 @@ public class MovieListFragment extends Fragment {
 
         MovieService movieService = RetrofitUtil.createService(MovieService.class);
 
-        final Call<MovieResponse> call = movieService.getPopular(BuildConfig.THE_MOVIE_DB_API_KEY);
+//        final Call<MovieResponse> call = movieService.getPopular(1);
+//
+//        new Thread(new Runnable() {
+//            @Override
+//            public void run() {
+//                try {
+//                    MovieResponse movieResponse = call.execute().body();
+//
+//                    Timber.d(movieResponse.toString());
+//                } catch (IOException e) {
+//                    Timber.e(e, null);
+//                    // handle errors
+//                }
+//
+//            }
+//        }).start();
+        final Call<MovieResponse> call = movieService.getTopRated(1);
 
         new Thread(new Runnable() {
             @Override

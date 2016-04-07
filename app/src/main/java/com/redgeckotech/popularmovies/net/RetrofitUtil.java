@@ -2,7 +2,13 @@ package com.redgeckotech.popularmovies.net;
 
 import com.redgeckotech.popularmovies.BuildConfig;
 
+import java.io.IOException;
+
+import okhttp3.HttpUrl;
+import okhttp3.Interceptor;
 import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
 import okhttp3.logging.HttpLoggingInterceptor;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
@@ -20,6 +26,16 @@ public class RetrofitUtil {
                     .baseUrl(API_BASE_URL)
                     .addConverterFactory(GsonConverterFactory.create());
 
+    private static Interceptor apiAuthenticationInterceptor = new Interceptor() {
+        @Override
+        public Response intercept(Chain chain) throws IOException {
+            Request request = chain.request();
+            HttpUrl url = request.url().newBuilder().addQueryParameter("api_key",BuildConfig.THE_MOVIE_DB_API_KEY).build();
+            request = request.newBuilder().url(url).build();
+            return chain.proceed(request);
+        }
+    };
+
     public static <S> S createService(Class<S> serviceClass) {
         HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
         if (BuildConfig.LOG_RETROFIT_QUERIES) {
@@ -28,7 +44,12 @@ public class RetrofitUtil {
             interceptor.setLevel(HttpLoggingInterceptor.Level.NONE);
         }
 
-        Retrofit retrofit = builder.client(httpClient.addInterceptor(interceptor).build()).build();
+        OkHttpClient client = httpClient
+                .addInterceptor(interceptor)
+                .addInterceptor(apiAuthenticationInterceptor)
+                .build();
+
+        Retrofit retrofit = builder.client(client).build();
         return retrofit.create(serviceClass);
     }
 }
