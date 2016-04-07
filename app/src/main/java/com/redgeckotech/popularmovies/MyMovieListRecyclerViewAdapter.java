@@ -5,15 +5,12 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
-import android.widget.TextView;
 
 import com.redgeckotech.popularmovies.MovieListFragment.OnListFragmentInteractionListener;
 import com.redgeckotech.popularmovies.model.Movie;
 import com.squareup.picasso.Picasso;
 
 import java.util.List;
-
-import timber.log.Timber;
 
 /**
  * {@link RecyclerView.Adapter} that can display a {@link Movie} and makes a call to the
@@ -45,7 +42,7 @@ public class MyMovieListRecyclerViewAdapter extends RecyclerView.Adapter<MyMovie
         holder.mItem = mValues.get(position);
         //holder.mIdView.setText("" + mValues.get(position).hashCode());
 
-        Timber.d("%d %s", mValues.get(position).hashCode(), mValues.get(position).getTitle());
+        //Timber.d("%d %s", mValues.get(position).hashCode(), mValues.get(position).getTitle());
 
         //holder.mContentView.setText(mValues.get(position).content);
         mPicasso.load(String.format("http://image.tmdb.org/t/p/%s/%s", mPosterSize, mValues.get(position).getPosterPath())).into(holder.mContentView);

@@ -1,7 +1,9 @@
 package com.redgeckotech.popularmovies;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.LinearLayoutManager;
@@ -44,6 +46,9 @@ public class MovieListFragment extends Fragment {
 
     private MyMovieListRecyclerViewAdapter mAdapter;
     private final List<Movie> mMovies = new ArrayList<Movie>();
+
+    private String mQueryType;
+    private int mPage;
 
     /**
      * Mandatory empty constructor for the fragment manager to instantiate the
@@ -98,32 +103,7 @@ public class MovieListFragment extends Fragment {
     public void onStart() {
         super.onStart();
 
-        final Call<MovieResponse> call = mMovieService.getPopular(1);
 
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    MovieResponse movieResponse = call.execute().body();
-
-
-                    Timber.d(movieResponse.toString());
-
-                    mMovies.addAll(movieResponse.getMovies());
-                    getActivity().runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            mAdapter.notifyDataSetChanged();
-                        }
-                    });
-
-                } catch (IOException e) {
-                    Timber.e(e, null);
-                    // handle errors
-                }
-
-            }
-        }).start();
 //        final Call<MovieResponse> call = movieService.getTopRated(1);
 //
 //        new Thread(new Runnable() {
@@ -140,6 +120,76 @@ public class MovieListFragment extends Fragment {
 //
 //            }
 //        }).start();
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+
+        Context context = getActivity();
+        if (context == null) {
+            return;
+        }
+
+        SharedPreferences sharedPrefs =
+                PreferenceManager.getDefaultSharedPreferences(context);
+        String queryType = sharedPrefs.getString(
+                getString(R.string.pref_sort_key),
+                getString(R.string.pref_sort_default));
+
+        if (!queryType.equals(mQueryType)) {
+            mQueryType = queryType;
+            mPage = 1;
+            updateMovieList();
+        }
+    }
+
+    public void updateMovieList() {
+
+        if (mQueryType == null) {
+            mQueryType = getString(R.string.pref_sort_default);
+        }
+
+        final Call<MovieResponse> call;
+
+        String highestRated = getString(R.string.highest_rated);
+
+        if (highestRated.equals(mQueryType)) {
+            call = mMovieService.getTopRated(1);
+        } else {
+            call = mMovieService.getPopular(1);
+        }
+
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    MovieResponse movieResponse = call.execute().body();
+
+                    Timber.d(movieResponse.toString());
+
+                    // If this is the first page, remove all items
+                    if (mPage == 1) {
+                        mMovies.clear();
+                    }
+
+                    // Append new items to list
+                    mMovies.addAll(movieResponse.getMovies());
+
+                    getActivity().runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            mAdapter.notifyDataSetChanged();
+                        }
+                    });
+
+                } catch (IOException e) {
+                    Timber.e(e, null);
+                    // handle errors
+                }
+
+            }
+        }).start();
     }
 
     @Override

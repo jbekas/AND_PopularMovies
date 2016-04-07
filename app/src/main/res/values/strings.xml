@@ -9,12 +9,14 @@
     <!-- Label for the location preference [CHAR LIMIT=30] -->
     <string name="pref_sort_label">Sort Order</string>
 
-    <!-- Key name for storing location in SharedPreferences [CHAR LIMIT=NONE] -->
+    <!-- Key name and values for storing location in SharedPreferences [CHAR LIMIT=NONE] -->
     <string name="pref_sort_key" translatable="false">sort_order</string>
+    <string name="most_popular" translatable="false">most_popular</string>
+    <string name="highest_rated" translatable="false">highest_rated</string>
 
     <!-- Default postal code for location preference [CHAR LIMIT=NONE] -->
     <string name="pref_sort_default">most_popular</string>
 
-    <string name="most_popular">Most Popular</string>
-    <string name="highest_rated">Highest Rated</string>
+    <string name="most_popular_label">Most Popular</string>
+    <string name="highest_rated_label">Highest Rated</string>
 </resources>

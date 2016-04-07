@@ -2,12 +2,12 @@
 <resources>
     <string-array
         name="sort_values">
-        <item>most popular</item>
-        <item>highest_rated</item>
+        <item>@string/most_popular</item>
+        <item>@string/highest_rated</item>
     </string-array>
     <string-array
         name="sort_labels">
-        <item>@string/most_popular</item>
-        <item>@string/highest_rated</item>
+        <item>@string/most_popular_label</item>
+        <item>@string/highest_rated_label</item>
     </string-array>
 </resources>
