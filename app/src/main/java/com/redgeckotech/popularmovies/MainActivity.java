@@ -3,6 +3,7 @@ package com.redgeckotech.popularmovies;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
 
@@ -22,12 +23,9 @@ public class MainActivity
         ((MoviesApplication) getApplicationContext()).getApplicationComponent().inject(this);
 
         setContentView(R.layout.activity_main);
-        if (savedInstanceState == null) {
-            getSupportFragmentManager().beginTransaction()
-                    .add(R.id.container, new MovieListFragment())
-                    .commit();
-        }
 
+        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
     }
 
     @Override
@@ -58,5 +56,10 @@ public class MainActivity
     @Override
     public void onListFragmentInteraction(Movie item) {
         Timber.d("onListFragmentInteraction: %s", item);
+
+        // for phones, start new activity
+        Intent intent = new Intent(this, MovieDetailActivity.class);
+        intent.putExtra(Constants.EXTRA_MOVIE, item);
+        startActivity(intent);
     }
 }

@@ -5,6 +5,8 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.v4.app.Fragment;
+import android.support.v7.app.ActionBar;
+import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -54,6 +56,9 @@ public class MovieListFragment extends Fragment {
     private String mQueryType;
     private int mPage;
 
+    public static String mHighestRated;
+    public static String mMostPopular;
+
     /**
      * Mandatory empty constructor for the fragment manager to instantiate the
      * fragment (e.g. upon screen orientation changes).
@@ -77,6 +82,9 @@ public class MovieListFragment extends Fragment {
 
         // Dependency injection
         ((MoviesApplication) getActivity().getApplicationContext()).getApplicationComponent().inject(this);
+
+        mMostPopular = getString(R.string.most_popular);
+        mHighestRated = getString(R.string.highest_rated);
 
         if (savedInstanceState != null) {
             List<Movie> movies = savedInstanceState.getParcelableArrayList(MOVIES);
@@ -153,6 +161,15 @@ public class MovieListFragment extends Fragment {
             mPage = 1;
             updateMovieList();
         }
+
+        ActionBar actionBar = ((AppCompatActivity) getActivity()).getSupportActionBar();
+        if (actionBar != null) {
+            if (mHighestRated.equals(mQueryType)) {
+                actionBar.setTitle(R.string.highest_rated_label);
+            } else {
+                actionBar.setTitle(R.string.most_popular_label);
+            }
+        }
     }
 
     @Override
@@ -172,9 +189,8 @@ public class MovieListFragment extends Fragment {
 
         final Call<MovieResponse> call;
 
-        String highestRated = getString(R.string.highest_rated);
 
-        if (highestRated.equals(mQueryType)) {
+        if (mHighestRated.equals(mQueryType)) {
             call = mMovieService.getTopRated(1);
         } else {
             call = mMovieService.getPopular(1);
