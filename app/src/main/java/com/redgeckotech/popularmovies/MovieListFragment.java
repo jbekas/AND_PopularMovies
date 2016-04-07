@@ -14,9 +14,10 @@ import com.redgeckotech.popularmovies.dummy.DummyContent;
 import com.redgeckotech.popularmovies.dummy.DummyContent.DummyItem;
 import com.redgeckotech.popularmovies.model.MovieResponse;
 import com.redgeckotech.popularmovies.net.MovieService;
-import com.redgeckotech.popularmovies.net.RetrofitUtil;
 
 import java.io.IOException;
+
+import javax.inject.Inject;
 
 import retrofit2.Call;
 import timber.log.Timber;
@@ -28,6 +29,8 @@ import timber.log.Timber;
  * interface.
  */
 public class MovieListFragment extends Fragment {
+
+    @Inject MovieService movieService;
 
     // TODO: Customize parameter argument names
     private static final String ARG_COLUMN_COUNT = "column-count";
@@ -55,6 +58,9 @@ public class MovieListFragment extends Fragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        // Dependency injection
+        ((MoviesApplication) getActivity().getApplicationContext()).getApplicationComponent().inject(this);
 
         if (getArguments() != null) {
             mColumnCount = getArguments().getInt(ARG_COLUMN_COUNT);
@@ -84,25 +90,7 @@ public class MovieListFragment extends Fragment {
     public void onStart() {
         super.onStart();
 
-        MovieService movieService = RetrofitUtil.createService(MovieService.class);
-
-//        final Call<MovieResponse> call = movieService.getPopular(1);
-//
-//        new Thread(new Runnable() {
-//            @Override
-//            public void run() {
-//                try {
-//                    MovieResponse movieResponse = call.execute().body();
-//
-//                    Timber.d(movieResponse.toString());
-//                } catch (IOException e) {
-//                    Timber.e(e, null);
-//                    // handle errors
-//                }
-//
-//            }
-//        }).start();
-        final Call<MovieResponse> call = movieService.getTopRated(1);
+        final Call<MovieResponse> call = movieService.getPopular(1);
 
         new Thread(new Runnable() {
             @Override
@@ -118,6 +106,22 @@ public class MovieListFragment extends Fragment {
 
             }
         }).start();
+//        final Call<MovieResponse> call = movieService.getTopRated(1);
+//
+//        new Thread(new Runnable() {
+//            @Override
+//            public void run() {
+//                try {
+//                    MovieResponse movieResponse = call.execute().body();
+//
+//                    Timber.d(movieResponse.toString());
+//                } catch (IOException e) {
+//                    Timber.e(e, null);
+//                    // handle errors
+//                }
+//
+//            }
+//        }).start();
     }
 
     @Override

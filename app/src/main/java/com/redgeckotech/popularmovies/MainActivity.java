@@ -17,6 +17,10 @@ public class MainActivity
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        // Dependency injection
+        ((MoviesApplication) getApplicationContext()).getApplicationComponent().inject(this);
+
         setContentView(R.layout.activity_main);
         if (savedInstanceState == null) {
             getSupportFragmentManager().beginTransaction()
