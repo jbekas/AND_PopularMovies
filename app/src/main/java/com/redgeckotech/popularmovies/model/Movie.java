@@ -10,6 +10,7 @@ import java.util.List;
 
 public class Movie implements Parcelable {
 
+    @SerializedName("id") protected int id;
     @SerializedName("adult") protected boolean adult;
     @SerializedName("backdrop_path") protected String backdropPath;
     @SerializedName("genre_ids") protected List<Integer> genreIds;
@@ -23,6 +24,35 @@ public class Movie implements Parcelable {
     @SerializedName("video") protected boolean video;
     @SerializedName("vote_average") protected float voteAverage;
     @SerializedName("vote_count") protected int voteCount;
+
+    public Movie() {
+    }
+
+    protected Movie(Parcel in) {
+        this.id = in.readInt();
+        this.adult = in.readByte() != 0;
+        this.backdropPath = in.readString();
+        this.genreIds = new ArrayList<Integer>();
+        in.readList(this.genreIds, Integer.class.getClassLoader());
+        this.originalLanguage = in.readString();
+        this.originalTitle = in.readString();
+        this.overview = in.readString();
+        this.popularity = in.readDouble();
+        this.posterPath = in.readString();
+        this.releaseDate = in.readString();
+        this.title = in.readString();
+        this.video = in.readByte() != 0;
+        this.voteAverage = in.readFloat();
+        this.voteCount = in.readInt();
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
+    }
 
     public String getOriginalTitle() {
         return originalTitle;
@@ -131,7 +161,8 @@ public class Movie implements Parcelable {
     @Override
     public String toString() {
         return "Movie{" +
-                "adult=" + adult +
+                "id=" + id +
+                ", adult=" + adult +
                 ", backdropPath='" + backdropPath + '\'' +
                 ", genreIds=" + genreIds +
                 ", originalLanguage='" + originalLanguage + '\'' +
@@ -148,9 +179,6 @@ public class Movie implements Parcelable {
     }
 
 
-    public Movie() {
-    }
-
     @Override
     public int describeContents() {
         return 0;
@@ -158,6 +186,7 @@ public class Movie implements Parcelable {
 
     @Override
     public void writeToParcel(Parcel dest, int flags) {
+        dest.writeInt(this.id);
         dest.writeByte(adult ? (byte) 1 : (byte) 0);
         dest.writeString(this.backdropPath);
         dest.writeList(this.genreIds);
@@ -171,23 +200,6 @@ public class Movie implements Parcelable {
         dest.writeByte(video ? (byte) 1 : (byte) 0);
         dest.writeFloat(this.voteAverage);
         dest.writeInt(this.voteCount);
-    }
-
-    protected Movie(Parcel in) {
-        this.adult = in.readByte() != 0;
-        this.backdropPath = in.readString();
-        this.genreIds = new ArrayList<Integer>();
-        in.readList(this.genreIds, Integer.class.getClassLoader());
-        this.originalLanguage = in.readString();
-        this.originalTitle = in.readString();
-        this.overview = in.readString();
-        this.popularity = in.readDouble();
-        this.posterPath = in.readString();
-        this.releaseDate = in.readString();
-        this.title = in.readString();
-        this.video = in.readByte() != 0;
-        this.voteAverage = in.readFloat();
-        this.voteCount = in.readInt();
     }
 
     public static final Creator<Movie> CREATOR = new Creator<Movie>() {
