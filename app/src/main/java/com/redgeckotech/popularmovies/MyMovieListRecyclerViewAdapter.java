@@ -8,22 +8,29 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.redgeckotech.popularmovies.MovieListFragment.OnListFragmentInteractionListener;
-import com.redgeckotech.popularmovies.dummy.DummyContent.DummyItem;
+import com.redgeckotech.popularmovies.model.Movie;
+import com.squareup.picasso.Picasso;
 
 import java.util.List;
 
+import timber.log.Timber;
+
 /**
- * {@link RecyclerView.Adapter} that can display a {@link DummyItem} and makes a call to the
+ * {@link RecyclerView.Adapter} that can display a {@link Movie} and makes a call to the
  * specified {@link OnListFragmentInteractionListener}.
  */
 public class MyMovieListRecyclerViewAdapter extends RecyclerView.Adapter<MyMovieListRecyclerViewAdapter.ViewHolder> {
 
-    private final List<DummyItem> mValues;
+    private final List<Movie> mValues;
     private final OnListFragmentInteractionListener mListener;
+    private final Picasso mPicasso;
 
-    public MyMovieListRecyclerViewAdapter(List<DummyItem> items, OnListFragmentInteractionListener listener) {
+    private final String mPosterSize = "w185";
+
+    public MyMovieListRecyclerViewAdapter(List<Movie> items, OnListFragmentInteractionListener listener, Picasso picasso) {
         mValues = items;
         mListener = listener;
+        mPicasso = picasso;
     }
 
     @Override
@@ -36,9 +43,14 @@ public class MyMovieListRecyclerViewAdapter extends RecyclerView.Adapter<MyMovie
     @Override
     public void onBindViewHolder(final ViewHolder holder, int position) {
         holder.mItem = mValues.get(position);
-        holder.mIdView.setText(mValues.get(position).id);
-        //holder.mContentView.setText(mValues.get(position).content);
+        //holder.mIdView.setText("" + mValues.get(position).hashCode());
 
+        Timber.d("%d %s", mValues.get(position).hashCode(), mValues.get(position).getTitle());
+
+        //holder.mContentView.setText(mValues.get(position).content);
+        mPicasso.load(String.format("http://image.tmdb.org/t/p/%s/%s", mPosterSize, mValues.get(position).getPosterPath())).into(holder.mContentView);
+
+        //http://image.tmdb.org/t/p/dlIPGXPxXQTp9kFrRzn0RsfUelx.jpg?api_key=07bb317f20ae1d58939907399b77c710
         holder.mView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -58,14 +70,14 @@ public class MyMovieListRecyclerViewAdapter extends RecyclerView.Adapter<MyMovie
 
     public class ViewHolder extends RecyclerView.ViewHolder {
         public final View mView;
-        public final TextView mIdView;
+        //public final TextView mIdView;
         public final ImageView mContentView;
-        public DummyItem mItem;
+        public Movie mItem;
 
         public ViewHolder(View view) {
             super(view);
             mView = view;
-            mIdView = (TextView) view.findViewById(R.id.id);
+            //mIdView = (TextView) view.findViewById(R.id.id);
             mContentView = (ImageView) view.findViewById(R.id.content);
         }
 

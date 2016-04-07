@@ -5,6 +5,7 @@ import android.content.Context;
 import com.redgeckotech.popularmovies.BuildConfig;
 import com.redgeckotech.popularmovies.MoviesApplication;
 import com.redgeckotech.popularmovies.net.MovieService;
+import com.squareup.picasso.Picasso;
 
 import java.io.IOException;
 
@@ -63,16 +64,14 @@ public class AppModule {
             }
         };
 
-        OkHttpClient httpClient = httpClientBuilder
+        return httpClientBuilder
                 .addInterceptor(interceptor)
                 .addInterceptor(apiAuthenticationInterceptor)
                 .build();
-
-
-        return httpClient;
     }
 
-    @Provides @Singleton MovieService getMovieService() {
+    @Provides
+    MovieService getMovieService() {
 
         try {
             OkHttpClient httpClient = getMovieDbHttpClient();
@@ -89,5 +88,13 @@ public class AppModule {
         }
 
         return null;
+    }
+
+    @Provides
+    Picasso getPicasso(Context context) {
+        Picasso.Builder picassoBuilder = new Picasso.Builder(context);
+
+        // Picasso.Builder creates the Picasso object to do the actual requests
+        return picassoBuilder.build();
     }
 }

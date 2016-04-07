@@ -10,12 +10,14 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
-import com.redgeckotech.popularmovies.dummy.DummyContent;
-import com.redgeckotech.popularmovies.dummy.DummyContent.DummyItem;
+import com.redgeckotech.popularmovies.model.Movie;
 import com.redgeckotech.popularmovies.model.MovieResponse;
 import com.redgeckotech.popularmovies.net.MovieService;
+import com.squareup.picasso.Picasso;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.inject.Inject;
 
@@ -30,13 +32,18 @@ import timber.log.Timber;
  */
 public class MovieListFragment extends Fragment {
 
-    @Inject MovieService movieService;
+    // Dependency injection points
+    @Inject MovieService mMovieService;
+    @Inject Picasso mPicasso;
 
     // TODO: Customize parameter argument names
     private static final String ARG_COLUMN_COUNT = "column-count";
     // TODO: Customize parameters
     private int mColumnCount = 2;
     private OnListFragmentInteractionListener mListener;
+
+    private MyMovieListRecyclerViewAdapter mAdapter;
+    private final List<Movie> mMovies = new ArrayList<Movie>();
 
     /**
      * Mandatory empty constructor for the fragment manager to instantiate the
@@ -81,7 +88,8 @@ public class MovieListFragment extends Fragment {
             } else {
                 recyclerView.setLayoutManager(new GridLayoutManager(context, mColumnCount));
             }
-            recyclerView.setAdapter(new MyMovieListRecyclerViewAdapter(DummyContent.ITEMS, mListener));
+            mAdapter = new MyMovieListRecyclerViewAdapter(mMovies, mListener, mPicasso);
+            recyclerView.setAdapter(mAdapter);
         }
         return view;
     }
@@ -90,7 +98,7 @@ public class MovieListFragment extends Fragment {
     public void onStart() {
         super.onStart();
 
-        final Call<MovieResponse> call = movieService.getPopular(1);
+        final Call<MovieResponse> call = mMovieService.getPopular(1);
 
         new Thread(new Runnable() {
             @Override
@@ -98,7 +106,17 @@ public class MovieListFragment extends Fragment {
                 try {
                     MovieResponse movieResponse = call.execute().body();
 
+
                     Timber.d(movieResponse.toString());
+
+                    mMovies.addAll(movieResponse.getMovies());
+                    getActivity().runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            mAdapter.notifyDataSetChanged();
+                        }
+                    });
+
                 } catch (IOException e) {
                     Timber.e(e, null);
                     // handle errors
@@ -153,6 +171,6 @@ public class MovieListFragment extends Fragment {
      */
     public interface OnListFragmentInteractionListener {
         // TODO: Update argument type and name
-        void onListFragmentInteraction(DummyItem item);
+        void onListFragmentInteraction(Movie item);
     }
 }

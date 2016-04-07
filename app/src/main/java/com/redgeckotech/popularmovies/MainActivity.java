@@ -6,7 +6,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.view.Menu;
 import android.view.MenuItem;
 
-import com.redgeckotech.popularmovies.dummy.DummyContent;
+import com.redgeckotech.popularmovies.model.Movie;
 
 import timber.log.Timber;
 
@@ -56,7 +56,7 @@ public class MainActivity
     }
 
     @Override
-    public void onListFragmentInteraction(DummyContent.DummyItem item) {
+    public void onListFragmentInteraction(Movie item) {
         Timber.d("onListFragmentInteraction: %s", item);
     }
 }
