@@ -12,8 +12,14 @@ import android.view.ViewGroup;
 
 import com.redgeckotech.popularmovies.dummy.DummyContent;
 import com.redgeckotech.popularmovies.dummy.DummyContent.DummyItem;
+import com.redgeckotech.popularmovies.model.MovieResponse;
+import com.redgeckotech.popularmovies.net.MovieService;
+import com.redgeckotech.popularmovies.net.RetrofitUtil;
 
-import java.util.List;
+import java.io.IOException;
+
+import retrofit2.Call;
+import timber.log.Timber;
 
 /**
  * A fragment representing a list of Items.
@@ -74,6 +80,29 @@ public class MovieListFragment extends Fragment {
         return view;
     }
 
+    @Override
+    public void onStart() {
+        super.onStart();
+
+        MovieService movieService = RetrofitUtil.createService(MovieService.class);
+
+        final Call<MovieResponse> call = movieService.getPopular(BuildConfig.THE_MOVIE_DB_API_KEY);
+
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    MovieResponse movieResponse = call.execute().body();
+
+                    Timber.d(movieResponse.toString());
+                } catch (IOException e) {
+                    Timber.e(e, null);
+                    // handle errors
+                }
+
+            }
+        }).start();
+    }
 
     @Override
     public void onAttach(Context context) {
