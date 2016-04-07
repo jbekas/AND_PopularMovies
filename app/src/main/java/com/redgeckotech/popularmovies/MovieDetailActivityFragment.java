@@ -48,8 +48,11 @@ public class MovieDetailActivityFragment extends Fragment {
         View rootView = inflater.inflate(R.layout.fragment_movie_detail, container, false);
 
         TextView movieTitle = (TextView) rootView.findViewById(R.id.movie_title);
+        TextView overview = (TextView) rootView.findViewById(R.id.overview);
 
         movieTitle.setText(mMovie.getTitle());
+        movieTitle.setSelected(true);
+        overview.setText(mMovie.getOverview());
 
         return rootView;
     }

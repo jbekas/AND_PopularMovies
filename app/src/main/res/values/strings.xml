@@ -20,4 +20,6 @@
 
     <string name="most_popular_label">Most Popular</string>
     <string name="highest_rated_label">Highest Rated</string>
+
+    <string name="mark_as_favorite">Mark as Favorite</string>
 </resources>
