@@ -121,24 +121,6 @@ public class MovieListFragment extends Fragment {
     @Override
     public void onStart() {
         super.onStart();
-
-
-//        final Call<MovieResponse> call = movieService.getTopRated(1);
-//
-//        new Thread(new Runnable() {
-//            @Override
-//            public void run() {
-//                try {
-//                    MovieResponse movieResponse = call.execute().body();
-//
-//                    Timber.d(movieResponse.toString());
-//                } catch (IOException e) {
-//                    Timber.e(e, null);
-//                    // handle errors
-//                }
-//
-//            }
-//        }).start();
     }
 
     @Override
