@@ -22,4 +22,5 @@
     <string name="highest_rated_label">Highest Rated</string>
 
     <string name="mark_as_favorite">Mark as Favorite</string>
+    <string name="vote_average">%s/10</string>
 </resources>

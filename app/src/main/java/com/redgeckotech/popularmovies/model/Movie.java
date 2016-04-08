@@ -2,11 +2,19 @@ package com.redgeckotech.popularmovies.model;
 
 import android.os.Parcel;
 import android.os.Parcelable;
+import android.support.annotation.Nullable;
 
 import com.google.gson.annotations.SerializedName;
 
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
+
+import timber.log.Timber;
 
 public class Movie implements Parcelable {
 
@@ -156,6 +164,21 @@ public class Movie implements Parcelable {
 
     public void setVoteCount(int voteCount) {
         this.voteCount = voteCount;
+    }
+
+    // Helper methods
+    @Nullable
+    public String getReleaseYear() {
+        try {
+            DateFormat format = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
+            Date date = format.parse(releaseDate);
+            SimpleDateFormat df = new SimpleDateFormat("yyyy", Locale.US);
+            return df.format(date);
+        } catch (ParseException e) {
+            Timber.e(e, null);
+        }
+
+        return null;
     }
 
     @Override
