@@ -54,12 +54,12 @@ public class MainActivity
     }
 
     @Override
-    public void onListFragmentInteraction(Movie item) {
-        Timber.d("onListFragmentInteraction: %s", item);
+    public void onListFragmentInteraction(Movie movie) {
+        Timber.d("onListFragmentInteraction: %s", movie);
 
         // for phones, start new activity
         Intent intent = new Intent(this, MovieDetailActivity.class);
-        intent.putExtra(Constants.EXTRA_MOVIE, item);
+        intent.putExtra(Constants.EXTRA_MOVIE, movie);
         startActivity(intent);
     }
 }

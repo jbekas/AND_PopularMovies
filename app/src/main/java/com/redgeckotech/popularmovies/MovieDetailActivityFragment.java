@@ -7,6 +7,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
+import android.widget.ScrollView;
 import android.widget.TextView;
 
 import com.redgeckotech.popularmovies.model.Movie;
@@ -27,6 +28,13 @@ public class MovieDetailActivityFragment extends Fragment {
 
     private Movie mMovie;
     private final String mPosterSize = "w185";
+
+    private ScrollView mScrollView;
+    private ImageView mMoviePoster;
+    private TextView mMovieTitle;
+    private TextView mOverview;
+    private TextView mYear;
+    private TextView mVoteAverage;
 
     public MovieDetailActivityFragment() {
     }
@@ -54,25 +62,14 @@ public class MovieDetailActivityFragment extends Fragment {
 
         View rootView = inflater.inflate(R.layout.fragment_movie_detail, container, false);
 
-        ImageView moviePoster = (ImageView) rootView.findViewById(R.id.movie_poster);
-        TextView movieTitle = (TextView) rootView.findViewById(R.id.movie_title);
-        TextView overview = (TextView) rootView.findViewById(R.id.overview);
-        TextView year = (TextView) rootView.findViewById(R.id.year);
-        TextView voteAverage = (TextView) rootView.findViewById(R.id.vote_average);
+        mScrollView = (ScrollView) rootView.findViewById(R.id.movie_detail_scrollview);
+        mMoviePoster = (ImageView) rootView.findViewById(R.id.movie_poster);
+        mMovieTitle = (TextView) rootView.findViewById(R.id.movie_title);
+        mOverview = (TextView) rootView.findViewById(R.id.overview);
+        mYear = (TextView) rootView.findViewById(R.id.year);
+        mVoteAverage = (TextView) rootView.findViewById(R.id.vote_average);
 
-        mPicasso.load(String.format("http://image.tmdb.org/t/p/%s/%s", mPosterSize, mMovie.getPosterPath())).into(moviePoster);
-
-        movieTitle.setText(mMovie.getTitle());
-        movieTitle.setSelected(true);
-        overview.setText(mMovie.getOverview());
-
-        String releaseYear = mMovie.getReleaseYear();
-        year.setText(releaseYear);
-        year.setVisibility(releaseYear == null ? View.GONE : View.VISIBLE);
-
-        // Limit decimals to 2, but strip if trailing decimals are 0
-        BigDecimal bd = new BigDecimal(mMovie.getVoteAverage()).setScale(2, BigDecimal.ROUND_HALF_UP).stripTrailingZeros();
-        voteAverage.setText(getString(R.string.vote_average, bd.toString()));
+        updateUI();
 
         return rootView;
     }
@@ -82,5 +79,34 @@ public class MovieDetailActivityFragment extends Fragment {
         super.onSaveInstanceState(outState);
 
         outState.putParcelable(Constants.EXTRA_MOVIE, mMovie);
+    }
+
+    public void updateUI() {
+        if (getActivity() != null) {
+            getActivity().runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    if (mMovie == null) {
+                        mScrollView.setVisibility(View.INVISIBLE);
+                    } else {
+                        mScrollView.setVisibility(View.VISIBLE);
+                        mPicasso.load(String.format("http://image.tmdb.org/t/p/%s/%s", mPosterSize, mMovie.getPosterPath())).into(mMoviePoster);
+
+                        mMovieTitle.setText(mMovie.getTitle());
+                        mOverview.setText(mMovie.getOverview());
+
+                        String releaseYear = mMovie.getReleaseYear();
+                        mYear.setText(releaseYear);
+                        mYear.setVisibility(releaseYear == null ? View.GONE : View.VISIBLE);
+
+                        // Limit decimals to 2, but strip if trailing decimals are 0
+                        BigDecimal bd = new BigDecimal(mMovie.getVoteAverage()).setScale(2, BigDecimal.ROUND_HALF_UP).stripTrailingZeros();
+                        mVoteAverage.setText(getString(R.string.vote_average, bd.toString()));
+
+                        mMovieTitle.setSelected(true);
+                    }
+                }
+            });
+        }
     }
 }
