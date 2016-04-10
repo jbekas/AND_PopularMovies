@@ -17,6 +17,7 @@ import android.view.ViewGroup;
 import com.redgeckotech.popularmovies.model.Movie;
 import com.redgeckotech.popularmovies.model.MovieResponse;
 import com.redgeckotech.popularmovies.net.MovieService;
+import com.redgeckotech.popularmovies.util.EndlessRecyclerOnScrollListener;
 import com.squareup.picasso.Picasso;
 
 import java.io.IOException;
@@ -29,10 +30,11 @@ import retrofit2.Call;
 import timber.log.Timber;
 
 /**
- * A fragment representing a list of Items.
+ * A fragment representing a list of Movies.
  * <p/>
  * Activities containing this fragment MUST implement the {@link OnListFragmentInteractionListener}
  * interface.
+ * <p/>
  */
 public class MovieListFragment extends Fragment {
 
@@ -53,8 +55,11 @@ public class MovieListFragment extends Fragment {
     private MyMovieListRecyclerViewAdapter mAdapter;
     private final ArrayList<Movie> mMovies = new ArrayList<>();
 
+    private LinearLayoutManager mLayoutManager;
+    private RecyclerView mRecyclerView;
+    private EndlessRecyclerOnScrollListener mEndlessScrollListener;
+
     private String mQueryType;
-    private int mPage;
 
     public static String mHighestRated;
     public static String mMostPopular;
@@ -86,16 +91,27 @@ public class MovieListFragment extends Fragment {
         mMostPopular = getString(R.string.most_popular);
         mHighestRated = getString(R.string.highest_rated);
 
+        int pageNumber;
+
         if (savedInstanceState != null) {
             List<Movie> movies = savedInstanceState.getParcelableArrayList(MOVIES);
             mMovies.addAll(movies);
             mQueryType = savedInstanceState.getString(QUERY_TYPE);
-            mPage = savedInstanceState.getInt(PAGE_NUMBER);
+            pageNumber = savedInstanceState.getInt(PAGE_NUMBER);
         } else {
             if (getArguments() != null) {
                 mColumnCount = getArguments().getInt(ARG_COLUMN_COUNT);
             }
+            pageNumber = 1;
         }
+
+        mEndlessScrollListener = new EndlessRecyclerOnScrollListener(pageNumber) {
+            @Override
+            public void onLoadMore(int currentPage) {
+                Timber.d("onLoadMore: %d", currentPage);
+                updateMovieList(currentPage);
+            }
+        };
     }
 
     @Override
@@ -105,16 +121,19 @@ public class MovieListFragment extends Fragment {
 
         // Set the adapter
         if (view instanceof RecyclerView) {
-            Context context = view.getContext();
-            RecyclerView recyclerView = (RecyclerView) view;
-            if (mColumnCount <= 1) {
-                recyclerView.setLayoutManager(new LinearLayoutManager(context));
-            } else {
-                recyclerView.setLayoutManager(new GridLayoutManager(context, mColumnCount));
-            }
+            mLayoutManager = new GridLayoutManager(view.getContext(), mColumnCount);
+
+            mRecyclerView = (RecyclerView) view;
+            mRecyclerView.setLayoutManager(mLayoutManager);
+
             mAdapter = new MyMovieListRecyclerViewAdapter(mMovies, mListener, mPicasso);
-            recyclerView.setAdapter(mAdapter);
+            mRecyclerView.setAdapter(mAdapter);
+
+            // Add endless scroller
+            mEndlessScrollListener.setLinearLayoutManager(mLayoutManager);
+            mRecyclerView.addOnScrollListener(mEndlessScrollListener);
         }
+
         return view;
     }
 
@@ -140,8 +159,7 @@ public class MovieListFragment extends Fragment {
 
         if (!queryType.equals(mQueryType)) {
             mQueryType = queryType;
-            mPage = 1;
-            updateMovieList();
+            updateMovieList(1);
         }
 
         ActionBar actionBar = ((AppCompatActivity) getActivity()).getSupportActionBar();
@@ -160,10 +178,10 @@ public class MovieListFragment extends Fragment {
 
         outState.putParcelableArrayList(MOVIES, mMovies);
         outState.putString(QUERY_TYPE, mQueryType);
-        outState.putInt(PAGE_NUMBER, mPage);
+        outState.putInt(PAGE_NUMBER, mEndlessScrollListener.getCurrentPage());
     }
 
-    public void updateMovieList() {
+    public void updateMovieList(final int pageNumber) {
 
         if (mQueryType == null) {
             mQueryType = getString(R.string.pref_sort_default);
@@ -173,9 +191,9 @@ public class MovieListFragment extends Fragment {
 
 
         if (mHighestRated.equals(mQueryType)) {
-            call = mMovieService.getTopRated(1);
+            call = mMovieService.getTopRated(pageNumber);
         } else {
-            call = mMovieService.getPopular(1);
+            call = mMovieService.getPopular(pageNumber);
         }
 
         new Thread(new Runnable() {
@@ -186,8 +204,8 @@ public class MovieListFragment extends Fragment {
 
                     Timber.d(movieResponse.toString());
 
-                    // If this is the first page, remove all items
-                    if (mPage == 1) {
+                    // Ifp this is the first page, remove all items
+                    if (pageNumber == 1) {
                         mMovies.clear();
                     }
 
@@ -197,6 +215,7 @@ public class MovieListFragment extends Fragment {
                     getActivity().runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
+                            Timber.d("notifyDataSetChanged");
                             mAdapter.notifyDataSetChanged();
                         }
                     });
