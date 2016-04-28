@@ -2,6 +2,7 @@ package com.redgeckotech.popularmovies.model;
 
 import android.os.Parcel;
 import android.os.Parcelable;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 
 import com.google.gson.annotations.SerializedName;
@@ -10,6 +11,7 @@ import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -86,12 +88,44 @@ public class Movie implements Parcelable {
         this.backdropPath = backdropPath;
     }
 
+    @NonNull
     public List<Integer> getGenreIds() {
+        if (genreIds == null) {
+            genreIds = new ArrayList<Integer>();
+        }
+
         return genreIds;
     }
 
     public void setGenreIds(List<Integer> genreIds) {
-        this.genreIds = genreIds;
+        if (genreIds == null) {
+            this.genreIds = new ArrayList<>();
+        } else {
+            this.genreIds = genreIds;
+        }
+    }
+
+    @NonNull
+    public String getGenreIdsAsString() {
+        StringBuilder builder = new StringBuilder();
+        for (Integer id : getGenreIds()) {
+            if (builder.length() > 0) {
+                builder.append(",");
+            }
+            builder.append(id);
+        }
+        return builder.toString();
+    }
+
+    public void setGenreIdsFromString(String genreIdString) {
+        genreIds = new ArrayList<>();
+
+        if (genreIdString != null) {
+            String[] array = genreIdString.split(",");
+            for (String id : array) {
+                genreIds.add(Integer.valueOf(id));
+            }
+        }
     }
 
     public String getOriginalLanguage() {

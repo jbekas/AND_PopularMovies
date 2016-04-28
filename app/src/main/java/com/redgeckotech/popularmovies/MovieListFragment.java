@@ -2,6 +2,7 @@ package com.redgeckotech.popularmovies;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.v4.app.Fragment;
@@ -14,6 +15,8 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
+import com.redgeckotech.popularmovies.db.MovieDB;
+import com.redgeckotech.popularmovies.db.MovieDatabaseHelper;
 import com.redgeckotech.popularmovies.model.Movie;
 import com.redgeckotech.popularmovies.model.MovieResponse;
 import com.redgeckotech.popularmovies.net.MovieService;
@@ -228,6 +231,25 @@ public class MovieListFragment extends Fragment {
 
                         // Append new items to list
                         mMovies.addAll(movieResponse.getMovies());
+
+                        MovieDatabaseHelper dbHelper = MovieDatabaseHelper.getInstance(getActivity());
+                        SQLiteDatabase db = null;
+                        try {
+                            db = dbHelper.getWritableDatabase();
+                            MovieDB movieDB = new MovieDB(db);
+
+                            for (Movie movie : movieResponse.getMovies()) {
+                                movieDB.save(movie);
+                            }
+
+                            Timber.d("saved movies");
+                            List<Movie> movies = movieDB.findAll();
+                            for (Movie movie : movies) {
+                                Timber.d(movie.toString());
+                            }
+                        } finally {
+                            MovieDatabaseHelper.close(db);
+                        }
 
                         // TODO move this to a ContentResolver and use the ContentResolver Observer pattern
                         getActivity().runOnUiThread(new Runnable() {
