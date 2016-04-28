@@ -21,6 +21,7 @@ import okhttp3.Request;
 import okhttp3.Response;
 import okhttp3.logging.HttpLoggingInterceptor;
 import retrofit2.Retrofit;
+import retrofit2.adapter.rxjava.RxJavaCallAdapterFactory;
 import retrofit2.converter.gson.GsonConverterFactory;
 import timber.log.Timber;
 
@@ -79,6 +80,7 @@ public class AppModule {
             Retrofit.Builder builder =
                     new Retrofit.Builder()
                             .baseUrl(API_BASE_URL)
+                            .addCallAdapterFactory(RxJavaCallAdapterFactory.create())
                             .addConverterFactory(GsonConverterFactory.create());
 
             Retrofit retrofit = builder.client(httpClient).build();

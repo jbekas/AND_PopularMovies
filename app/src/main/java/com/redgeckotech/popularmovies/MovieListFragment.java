@@ -27,6 +27,12 @@ import java.util.List;
 import javax.inject.Inject;
 
 import retrofit2.Call;
+import retrofit2.Response;
+import rx.Observable;
+import rx.Subscriber;
+import rx.android.schedulers.AndroidSchedulers;
+import rx.functions.Action1;
+import rx.schedulers.Schedulers;
 import timber.log.Timber;
 
 /**
@@ -187,8 +193,7 @@ public class MovieListFragment extends Fragment {
             mQueryType = getString(R.string.pref_sort_default);
         }
 
-        final Call<MovieResponse> call;
-
+        final Observable<MovieResponse> call;
 
         if (mHighestRated.equals(mQueryType)) {
             call = mMovieService.getTopRated(pageNumber);
@@ -196,37 +201,50 @@ public class MovieListFragment extends Fragment {
             call = mMovieService.getPopular(pageNumber);
         }
 
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    MovieResponse movieResponse = call.execute().body();
-
-                    Timber.d(movieResponse.toString());
-
-                    // Ifp this is the first page, remove all items
-                    if (pageNumber == 1) {
-                        mMovies.clear();
-                    }
-
-                    // Append new items to list
-                    mMovies.addAll(movieResponse.getMovies());
-
-                    getActivity().runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            Timber.d("notifyDataSetChanged");
-                            mAdapter.notifyDataSetChanged();
-                        }
-                    });
-
-                } catch (IOException e) {
-                    Timber.e(e, null);
-                    // handle errors
+        call.subscribeOn(Schedulers.io())
+            .observeOn(Schedulers.io())
+            .subscribe(new Subscriber<MovieResponse>() {
+                @Override
+                public void onCompleted() {
+                    Timber.d("onCompleted");
                 }
 
-            }
-        }).start();
+                @Override
+                public void onError(Throwable e) {
+                    Timber.e(e, null);
+                }
+
+                @Override
+                public void onNext(MovieResponse movieResponse) {
+                    try {
+
+                        //Timber.d(movieResponse.toString());
+                        Timber.d("Received API MovieResponse");
+
+                        // Ifp this is the first page, remove all items
+                        if (pageNumber == 1) {
+                            mMovies.clear();
+                        }
+
+                        // Append new items to list
+                        mMovies.addAll(movieResponse.getMovies());
+
+                        // TODO move this to a ContentResolver and use the ContentResolver Observer pattern
+                        getActivity().runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                Timber.d("notifyDataSetChanged");
+                                mAdapter.notifyDataSetChanged();
+                            }
+                        });
+
+                    } catch (Exception e) {
+                        Timber.e(e, null);
+                        // handle errors
+                    }
+
+                }
+            });
     }
 
     @Override
