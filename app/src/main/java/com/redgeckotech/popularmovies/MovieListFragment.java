@@ -2,6 +2,7 @@ package com.redgeckotech.popularmovies;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
@@ -23,18 +24,10 @@ import com.redgeckotech.popularmovies.net.MovieService;
 import com.redgeckotech.popularmovies.util.EndlessRecyclerOnScrollListener;
 import com.squareup.picasso.Picasso;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-
 import javax.inject.Inject;
 
-import retrofit2.Call;
-import retrofit2.Response;
 import rx.Observable;
 import rx.Subscriber;
-import rx.android.schedulers.AndroidSchedulers;
-import rx.functions.Action1;
 import rx.schedulers.Schedulers;
 import timber.log.Timber;
 
@@ -47,7 +40,6 @@ import timber.log.Timber;
  */
 public class MovieListFragment extends Fragment {
 
-    public static final String MOVIES = "MOVIES";
     public static final String QUERY_TYPE = "QUERY_TYPE";
     public static final String PAGE_NUMBER = "PAGE_NUMBER";
 
@@ -62,7 +54,6 @@ public class MovieListFragment extends Fragment {
     private OnListFragmentInteractionListener mListener;
 
     private MyMovieListRecyclerViewAdapter mAdapter;
-    private final ArrayList<Movie> mMovies = new ArrayList<>();
 
     private LinearLayoutManager mLayoutManager;
     private RecyclerView mRecyclerView;
@@ -103,8 +94,6 @@ public class MovieListFragment extends Fragment {
         int pageNumber;
 
         if (savedInstanceState != null) {
-            List<Movie> movies = savedInstanceState.getParcelableArrayList(MOVIES);
-            mMovies.addAll(movies);
             mQueryType = savedInstanceState.getString(QUERY_TYPE);
             pageNumber = savedInstanceState.getInt(PAGE_NUMBER);
         } else {
@@ -135,7 +124,7 @@ public class MovieListFragment extends Fragment {
             mRecyclerView = (RecyclerView) view;
             mRecyclerView.setLayoutManager(mLayoutManager);
 
-            mAdapter = new MyMovieListRecyclerViewAdapter(mMovies, mListener, mPicasso);
+            mAdapter = new MyMovieListRecyclerViewAdapter(getActivity(), null, mListener, mPicasso);
             mRecyclerView.setAdapter(mAdapter);
 
             // Add endless scroller
@@ -185,7 +174,6 @@ public class MovieListFragment extends Fragment {
     public void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
 
-        outState.putParcelableArrayList(MOVIES, mMovies);
         outState.putString(QUERY_TYPE, mQueryType);
         outState.putInt(PAGE_NUMBER, mEndlessScrollListener.getCurrentPage());
     }
@@ -197,11 +185,14 @@ public class MovieListFragment extends Fragment {
         }
 
         final Observable<MovieResponse> call;
+        final MovieDB.SORT_ORDER sortOrder;
 
         if (mHighestRated.equals(mQueryType)) {
             call = mMovieService.getTopRated(pageNumber);
+            sortOrder = MovieDB.SORT_ORDER.HIGHEST_RATED;
         } else {
             call = mMovieService.getPopular(pageNumber);
+            sortOrder = MovieDB.SORT_ORDER.MOST_POPULAR;
         }
 
         call.subscribeOn(Schedulers.io())
@@ -221,44 +212,36 @@ public class MovieListFragment extends Fragment {
                 public void onNext(MovieResponse movieResponse) {
                     try {
 
-                        //Timber.d(movieResponse.toString());
                         Timber.d("Received API MovieResponse");
-
-                        // Ifp this is the first page, remove all items
-                        if (pageNumber == 1) {
-                            mMovies.clear();
-                        }
-
-                        // Append new items to list
-                        mMovies.addAll(movieResponse.getMovies());
 
                         MovieDatabaseHelper dbHelper = MovieDatabaseHelper.getInstance(getActivity());
                         SQLiteDatabase db = null;
                         try {
                             db = dbHelper.getWritableDatabase();
-                            MovieDB movieDB = new MovieDB(db);
+                            final MovieDB movieDB = new MovieDB(db);
+
+                            // If this is the first page, remove all items
+                            if (pageNumber == 1) {
+                                MovieDB.removeAll(db);
+                            }
 
                             for (Movie movie : movieResponse.getMovies()) {
                                 movieDB.save(movie);
                             }
 
-                            Timber.d("saved movies");
-                            List<Movie> movies = movieDB.findAll();
-                            for (Movie movie : movies) {
-                                Timber.d(movie.toString());
-                            }
-                        } finally {
-                            MovieDatabaseHelper.close(db);
-                        }
+                            // TODO move this to a ContentResolver and use the ContentResolver Observer pattern
+                            getActivity().runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    Cursor c = movieDB.findCursor(sortOrder);
+                                    Timber.d("swapCursor");
+                                    mAdapter.swapCursor(c);
+                                }
+                            });
 
-                        // TODO move this to a ContentResolver and use the ContentResolver Observer pattern
-                        getActivity().runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                Timber.d("notifyDataSetChanged");
-                                mAdapter.notifyDataSetChanged();
-                            }
-                        });
+                        } finally {
+                            //MovieDatabaseHelper.close(db);
+                        }
 
                     } catch (Exception e) {
                         Timber.e(e, null);

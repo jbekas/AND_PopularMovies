@@ -14,6 +14,8 @@ import timber.log.Timber;
 public class MovieDB {
     private SQLiteDatabase database;
 
+    public enum SORT_ORDER { MOST_POPULAR, HIGHEST_RATED }
+
     public final static String TABLE = "movies";
 
     public static final String ID = "_id";
@@ -68,7 +70,7 @@ public class MovieDB {
 
     public long save(Movie movie) {
 
-        Timber.v("Saving movie: %s", movie);
+        //Timber.v("Saving movie: %s", movie);
 
         ContentValues values = new ContentValues();
         values.put(ID, movie.getId());
@@ -128,6 +130,23 @@ public class MovieDB {
         }
 
         return movies;
+    }
+
+    public Cursor findCursor(SORT_ORDER sortOrder) {
+
+        String sort = null;
+        switch (sortOrder) {
+            case MOST_POPULAR:
+                sort = POPULARITY + " DESC";
+                break;
+            case HIGHEST_RATED:
+                sort = VOTE_AVERAGE + " DESC";
+                break;
+            default:
+                Timber.e("No sort order specified.");
+        }
+
+        return database.query(TABLE, null, null, null, null, null, sort, null);
     }
 
     public static Movie createMovie(Cursor cursor) {
