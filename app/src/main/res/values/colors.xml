@@ -11,4 +11,11 @@
     <color name="blue300">#64B5F6</color>
     <color name="blue400">#42A5F5</color>
     <color name="blue500">#2196f3</color>
+
+    <color name="yellow300">#FFF176</color>
+    <color name="yellow500">#FFEB3B</color>
+    <color name="grey300">#E0E0E0</color>
+    <color name="grey500">#9E9E9E</color>
+
+    <color name="button_grey">#757575</color>
 </resources>

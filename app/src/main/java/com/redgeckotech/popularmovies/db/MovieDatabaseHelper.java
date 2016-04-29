@@ -35,6 +35,7 @@ public class MovieDatabaseHelper extends SQLiteOpenHelper {
     public void onCreate(SQLiteDatabase db) {
         Timber.d("onCreate called.");
         MovieDB.createTable(db);
+        FavoriteMovieDB.createTable(db);
     }
 
     // Called when there is a database version mismatch meaning that
@@ -49,8 +50,9 @@ public class MovieDatabaseHelper extends SQLiteOpenHelper {
         // comparing oldVersion and newVersion values.
         // The simplest case is to drop the old table and create a new one.
         MovieDB.dropTable(db);
-        // Create a new one.
-        onCreate(db);
+        MovieDB.createTable(db);
+
+        // If necessary, upgrade favorites table so that favorites are not lost.
     }
 
     public static void deleteDatabase(Context context) {
@@ -75,6 +77,8 @@ public class MovieDatabaseHelper extends SQLiteOpenHelper {
         SQLiteDatabase db = dbHelper.getWritableDatabase();
 
         MovieDB.removeAll(db);
+        FavoriteMovieDB.removeAll(db);
+
         db.execSQL("VACUUM");
     }
 }
