@@ -33,49 +33,49 @@ public class MainActivity
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        FragmentManager fm = getSupportFragmentManager();
-        final MovieListFragment movieListFragment = (MovieListFragment) fm.findFragmentById(R.id.movie_list_fragment);
+//        FragmentManager fm = getSupportFragmentManager();
+//        final MovieListFragment movieListFragment = (MovieListFragment) fm.findFragmentById(R.id.movie_list_fragment);
 
-        Spinner spinner = (Spinner) toolbar.findViewById(R.id.spinner);
+//        Spinner spinner = (Spinner) toolbar.findViewById(R.id.spinner);
 
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
-        String value = prefs.getString(Constants.SELECTED_VIEW_PREF, Constants.VIEW_TYPE.MOST_POPULAR.toString());
-        Constants.VIEW_TYPE viewType = Constants.VIEW_TYPE.valueOf(value);
-
-        switch (viewType) {
-            case MOST_POPULAR:
-                spinner.setSelection(0);
-                break;
-            case HIGHEST_RATED:
-                spinner.setSelection(1);
-                break;
-            case FAVORITES:
-                spinner.setSelection(2);
-                break;
-        }
-
-        spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                Timber.d("on item selected");
-                switch (position) {
-                    case 0:
-                        movieListFragment.changeSelection(Constants.VIEW_TYPE.MOST_POPULAR);
-                        break;
-                    case 1:
-                        movieListFragment.changeSelection(Constants.VIEW_TYPE.HIGHEST_RATED);
-                        break;
-                    case 2:
-                        movieListFragment.changeSelection(Constants.VIEW_TYPE.FAVORITES);
-                        break;
-                }
-            }
-
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {
-
-            }
-        });
+//        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+//        String value = prefs.getString(Constants.SELECTED_VIEW_PREF, Constants.VIEW_TYPE.MOST_POPULAR.toString());
+//        Constants.VIEW_TYPE viewType = Constants.VIEW_TYPE.valueOf(value);
+//
+//        switch (viewType) {
+//            case MOST_POPULAR:
+//                spinner.setSelection(0);
+//                break;
+//            case HIGHEST_RATED:
+//                spinner.setSelection(1);
+//                break;
+//            case FAVORITES:
+//                spinner.setSelection(2);
+//                break;
+//        }
+//
+//        spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+//            @Override
+//            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+//                Timber.d("on item selected");
+//                switch (position) {
+//                    case 0:
+//                        movieListFragment.changeSelection(Constants.VIEW_TYPE.MOST_POPULAR);
+//                        break;
+//                    case 1:
+//                        movieListFragment.changeSelection(Constants.VIEW_TYPE.HIGHEST_RATED);
+//                        break;
+//                    case 2:
+//                        movieListFragment.changeSelection(Constants.VIEW_TYPE.FAVORITES);
+//                        break;
+//                }
+//            }
+//
+//            @Override
+//            public void onNothingSelected(AdapterView<?> parent) {
+//
+//            }
+//        });
     }
 
     @Override

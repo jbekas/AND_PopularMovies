@@ -1,12 +1,57 @@
 <?xml version="1.0" encoding="utf-8"?>
-<android.support.v7.widget.RecyclerView
-    android:id="@+id/list"
-    android:name="com.redgeckotech.popularmovies.MovieListFragment"
+<RelativeLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    app:layoutManager="LinearLayoutManager"
-    tools:context="com.redgeckotech.popularmovies.MainActivity"
-    tools:listitem="@layout/fragment_movielist"/>
+    android:layout_height="match_parent">
+
+    <LinearLayout
+        android:id="@+id/navigation_header"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/most_popular"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:minHeight="?android:attr/listPreferredItemHeight"
+            android:background="?android:attr/selectableItemBackground"
+            android:text="@string/most_popular_label"/>
+
+        <TextView
+            android:id="@+id/highest_rated"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:minHeight="?android:attr/listPreferredItemHeight"
+            android:background="?android:attr/selectableItemBackground"
+            android:text="@string/highest_rated_label"/>
+
+        <TextView
+            android:id="@+id/favorites"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:minHeight="?android:attr/listPreferredItemHeight"
+            android:background="?android:attr/selectableItemBackground"
+            android:text="@string/favorites_label"/>
+
+    </LinearLayout>
+
+    <android.support.v7.widget.RecyclerView
+        android:id="@+id/list"
+        android:name="com.redgeckotech.popularmovies.MovieListFragment"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@id/navigation_header"
+        app:layoutManager="LinearLayoutManager"
+        tools:context="com.redgeckotech.popularmovies.MainActivity"
+        tools:listitem="@layout/fragment_movielist"/>
+</RelativeLayout>

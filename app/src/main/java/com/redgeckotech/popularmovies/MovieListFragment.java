@@ -6,10 +6,13 @@ import android.content.SharedPreferences;
 import android.database.ContentObserver;
 import android.database.Cursor;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.preference.PreferenceManager;
+import android.support.annotation.ColorInt;
+import android.support.annotation.StyleRes;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.CursorLoader;
@@ -21,6 +24,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ListView;
+import android.widget.TextView;
 
 import com.redgeckotech.popularmovies.data.MovieContract.MovieEntry;
 import com.redgeckotech.popularmovies.model.Movie;
@@ -33,6 +37,9 @@ import java.util.Vector;
 
 import javax.inject.Inject;
 
+import butterknife.Bind;
+import butterknife.ButterKnife;
+import butterknife.OnClick;
 import rx.Observable;
 import rx.Subscriber;
 import rx.schedulers.Schedulers;
@@ -55,6 +62,11 @@ public class MovieListFragment extends Fragment implements LoaderManager.LoaderC
     @Inject MovieService mMovieService;
     @Inject Picasso mPicasso;
 
+    @Bind(R.id.list) RecyclerView mRecyclerView;
+    @Bind(R.id.most_popular) TextView mMostPopular;
+    @Bind(R.id.highest_rated) TextView mHighestRated;
+    @Bind(R.id.favorites) TextView mFavorites;
+
     // TODO: Customize parameter argument names
     private static final String ARG_COLUMN_COUNT = "column-count";
     // TODO: Customize parameters
@@ -64,11 +76,12 @@ public class MovieListFragment extends Fragment implements LoaderManager.LoaderC
     private MyMovieListRecyclerViewAdapter mAdapter;
 
     private LinearLayoutManager mLayoutManager;
-    private RecyclerView mRecyclerView;
     private EndlessRecyclerOnScrollListener mEndlessScrollListener;
-    private int mPosition = ListView.INVALID_POSITION;
 
     private MovieContentObserver mMovieContentObserver;
+
+    @ColorInt int redColor;
+    @ColorInt int greyColor;
 
     /**
      * Mandatory empty constructor for the fragment manager to instantiate the
@@ -112,41 +125,106 @@ public class MovieListFragment extends Fragment implements LoaderManager.LoaderC
                 updateMovieList(currentPage);
             }
         };
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            redColor = getResources().getColor(R.color.colorAccent, getActivity().getTheme());
+            greyColor = getResources().getColor(R.color.grey300, getActivity().getTheme());
+        } else {
+            redColor = getResources().getColor(R.color.colorAccent);
+            greyColor = getResources().getColor(R.color.grey300);
+        }
     }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.fragment_movielist_list, container, false);
+        View rootView = inflater.inflate(R.layout.fragment_movielist_list, container, false);
 
-        // Set the adapter
-        if (view instanceof RecyclerView) {
-            mLayoutManager = new GridLayoutManager(view.getContext(), mColumnCount);
+        ButterKnife.bind(this, rootView);
 
-            mRecyclerView = (RecyclerView) view;
-            mRecyclerView.setLayoutManager(mLayoutManager);
+        mLayoutManager = new GridLayoutManager(mRecyclerView.getContext(), mColumnCount);
 
-            mAdapter = new MyMovieListRecyclerViewAdapter(null, mListener, mPicasso);
-            mRecyclerView.setAdapter(mAdapter);
+        mRecyclerView.setLayoutManager(mLayoutManager);
 
-            // Add endless scroller
-            mEndlessScrollListener.setLinearLayoutManager(mLayoutManager);
-            mRecyclerView.addOnScrollListener(mEndlessScrollListener);
+        mAdapter = new MyMovieListRecyclerViewAdapter(null, mListener, mPicasso);
+        mRecyclerView.setAdapter(mAdapter);
 
-            mRecyclerView.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    Timber.d("onClick %s", v);
-                }
-            });
+        // Add endless scroller
+        mEndlessScrollListener.setLinearLayoutManager(mLayoutManager);
+        mRecyclerView.addOnScrollListener(mEndlessScrollListener);
+
+        return rootView;
+    }
+
+    @OnClick(R.id.most_popular)
+    public void onMostPopular(View v) {
+        changeSelection(Constants.VIEW_TYPE.MOST_POPULAR);
+        updateNavigationHeader();
+    }
+
+    @OnClick(R.id.highest_rated)
+    public void onHighestRated(View v) {
+        changeSelection(Constants.VIEW_TYPE.HIGHEST_RATED);
+        updateNavigationHeader();
+    }
+
+    @OnClick(R.id.favorites)
+    public void onFavorites(View v) {
+        changeSelection(Constants.VIEW_TYPE.FAVORITES);
+        updateNavigationHeader();
+    }
+
+    private void updateNavigationHeader() {
+        setTextAppearance(mMostPopular, R.style.NormalHeaderTab);
+        setTextAppearance(mHighestRated, R.style.NormalHeaderTab);
+        setTextAppearance(mFavorites, R.style.NormalHeaderTab);
+
+        switch (getViewType()) {
+            case MOST_POPULAR:
+                setTextAppearance(mMostPopular, R.style.HighlightedHeaderTab);
+                break;
+            case HIGHEST_RATED:
+                setTextAppearance(mHighestRated, R.style.HighlightedHeaderTab);
+                break;
+            case FAVORITES:
+                setTextAppearance(mFavorites, R.style.HighlightedHeaderTab);
+                break;
+        }
+    }
+
+    private void setTextAppearance(TextView textView, @StyleRes int styleResourceId) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            textView.setTextAppearance(styleResourceId);
+        } else {
+            if (getActivity() != null) {
+                textView.setTextAppearance(getActivity(), styleResourceId);
+            }
+        }
+    }
+
+    private Constants.VIEW_TYPE getViewType() {
+        Constants.VIEW_TYPE viewType = Constants.VIEW_TYPE.MOST_POPULAR;
+
+        try {
+            SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getActivity());
+            String value = prefs.getString(Constants.SELECTED_VIEW_PREF, Constants.VIEW_TYPE.MOST_POPULAR.toString());
+            viewType = Constants.VIEW_TYPE.valueOf(value);
+        } catch (Exception e) {
+            Timber.e(e, null);
         }
 
-        return view;
+        return viewType;
     }
 
     @Override
     public void onStart() {
         super.onStart();
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        updateNavigationHeader();
     }
 
     @Override
@@ -359,12 +437,6 @@ public class MovieListFragment extends Fragment implements LoaderManager.LoaderC
 //        }
 
         mAdapter.swapCursor(data);
-//        if (mPosition != ListView.INVALID_POSITION) {
-//            // If we don't need to restart the loader, and there's a desired position to restore
-//            // to, do so now.
-//            mRecyclerView.smoothScrollToPosition(mPosition);
-//        }
-
     }
 
     @Override
