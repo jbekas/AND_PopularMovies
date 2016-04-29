@@ -45,44 +45,11 @@ public class MyMovieListRecyclerViewAdapter extends CursorRecyclerViewAdapter<My
         return new ViewHolder(view);
     }
 
-//    @Override
-//    public void onBindViewHolder(final ViewHolder holder, int position) {
-//        holder.mItem = mValues.get(position);
-//        //holder.mIdView.setText("" + mValues.get(position).hashCode());
-//
-//        //Timber.d("%d %s", mValues.get(position).hashCode(), mValues.get(position).getTitle());
-//
-//        //holder.mContentView.setText(mValues.get(position).content);
-//        mPicasso.load(String.format("http://image.tmdb.org/t/p/%s/%s", mPosterSize, mValues.get(position).getPosterPath())).into(holder.mContentView);
-//
-//        //http://image.tmdb.org/t/p/dlIPGXPxXQTp9kFrRzn0RsfUelx.jpg?api_key=07bb317f20ae1d58939907399b77c710
-//        holder.mView.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View v) {
-//                if (null != mListener) {
-//                    // Notify the active callbacks interface (the activity, if the
-//                    // fragment is attached to one) that an item has been selected.
-//                    mListener.onListFragmentInteraction(holder.mItem);
-//                }
-//            }
-//        });
-//    }
-
-//    @Override
-//    public int getItemCount() {
-//        return super.getItemCount()
-//    }
-
     @Override
     public void onBindViewHolder(final ViewHolder viewHolder, Cursor cursor) {
-        Movie movie = MovieDB.createMovie(cursor);
-        //viewHolder.mItem = mValues.get(position);
-        //holder.mIdView.setText("" + mValues.get(position).hashCode());
+        viewHolder.mItem = MovieDB.createMovie(cursor);
 
-        //Timber.d("%d %s", mValues.get(position).hashCode(), mValues.get(position).getTitle());
-
-        //holder.mContentView.setText(mValues.get(position).content);
-        mPicasso.load(String.format("http://image.tmdb.org/t/p/%s/%s", mPosterSize, movie.getPosterPath())).into(viewHolder.mContentView);
+        mPicasso.load(String.format("http://image.tmdb.org/t/p/%s/%s", mPosterSize, viewHolder.mItem.getPosterPath())).into(viewHolder.mContentView);
 
         //http://image.tmdb.org/t/p/dlIPGXPxXQTp9kFrRzn0RsfUelx.jpg?api_key=07bb317f20ae1d58939907399b77c710
         viewHolder.mView.setOnClickListener(new View.OnClickListener() {
@@ -99,14 +66,12 @@ public class MyMovieListRecyclerViewAdapter extends CursorRecyclerViewAdapter<My
 
     public class ViewHolder extends RecyclerView.ViewHolder {
         public final View mView;
-        //public final TextView mIdView;
         public final ImageView mContentView;
         public Movie mItem;
 
         public ViewHolder(View view) {
             super(view);
             mView = view;
-            //mIdView = (TextView) view.findViewById(R.id.id);
             mContentView = (ImageView) view.findViewById(R.id.content);
         }
 
