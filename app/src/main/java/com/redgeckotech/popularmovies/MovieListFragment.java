@@ -1,12 +1,19 @@
 package com.redgeckotech.popularmovies;
 
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.database.ContentObserver;
 import android.database.Cursor;
-import android.database.sqlite.SQLiteDatabase;
+import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.HandlerThread;
 import android.preference.PreferenceManager;
 import android.support.v4.app.Fragment;
+import android.support.v4.app.LoaderManager;
+import android.support.v4.content.CursorLoader;
+import android.support.v4.content.Loader;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.GridLayoutManager;
@@ -15,14 +22,16 @@ import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ListView;
 
-import com.redgeckotech.popularmovies.db.MovieDB;
-import com.redgeckotech.popularmovies.db.MovieDatabaseHelper;
+import com.redgeckotech.popularmovies.data.MovieContract.MovieEntry;
 import com.redgeckotech.popularmovies.model.Movie;
 import com.redgeckotech.popularmovies.model.MovieResponse;
 import com.redgeckotech.popularmovies.net.MovieService;
 import com.redgeckotech.popularmovies.util.EndlessRecyclerOnScrollListener;
 import com.squareup.picasso.Picasso;
+
+import java.util.Vector;
 
 import javax.inject.Inject;
 
@@ -38,7 +47,9 @@ import timber.log.Timber;
  * interface.
  * <p/>
  */
-public class MovieListFragment extends Fragment {
+public class MovieListFragment extends Fragment implements LoaderManager.LoaderCallbacks<Cursor> {
+
+    private static final int MOVIE_LIST_LOADER = 0;
 
     public static final String QUERY_TYPE = "QUERY_TYPE";
     public static final String PAGE_NUMBER = "PAGE_NUMBER";
@@ -58,11 +69,14 @@ public class MovieListFragment extends Fragment {
     private LinearLayoutManager mLayoutManager;
     private RecyclerView mRecyclerView;
     private EndlessRecyclerOnScrollListener mEndlessScrollListener;
+    private int mPosition = ListView.INVALID_POSITION;
 
     private String mQueryType;
 
     public static String mHighestRated;
     public static String mMostPopular;
+
+    private MovieContentObserver mMovieContentObserver;
 
     /**
      * Mandatory empty constructor for the fragment manager to instantiate the
@@ -130,6 +144,13 @@ public class MovieListFragment extends Fragment {
             // Add endless scroller
             mEndlessScrollListener.setLinearLayoutManager(mLayoutManager);
             mRecyclerView.addOnScrollListener(mEndlessScrollListener);
+
+            mRecyclerView.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    Timber.d("onClick %s", v);
+                }
+            });
         }
 
         return view;
@@ -185,71 +206,82 @@ public class MovieListFragment extends Fragment {
         }
 
         final Observable<MovieResponse> call;
-        final MovieDB.SORT_ORDER sortOrder;
 
         if (mHighestRated.equals(mQueryType)) {
             call = mMovieService.getTopRated(pageNumber);
-            sortOrder = MovieDB.SORT_ORDER.HIGHEST_RATED;
         } else {
             call = mMovieService.getPopular(pageNumber);
-            sortOrder = MovieDB.SORT_ORDER.MOST_POPULAR;
         }
 
         call.subscribeOn(Schedulers.io())
-            .observeOn(Schedulers.io())
-            .subscribe(new Subscriber<MovieResponse>() {
-                @Override
-                public void onCompleted() {
-                    Timber.d("onCompleted");
-                }
+                .observeOn(Schedulers.io())
+                .subscribe(new Subscriber<MovieResponse>() {
+                    @Override
+                    public void onCompleted() {
+                        Timber.d("onCompleted");
+                    }
 
-                @Override
-                public void onError(Throwable e) {
-                    Timber.e(e, null);
-                }
+                    @Override
+                    public void onError(Throwable e) {
+                        Timber.e(e, null);
+                    }
 
-                @Override
-                public void onNext(MovieResponse movieResponse) {
-                    try {
-
-                        Timber.d("Received API MovieResponse");
-
-                        MovieDatabaseHelper dbHelper = MovieDatabaseHelper.getInstance(getActivity());
-                        SQLiteDatabase db = null;
+                    @Override
+                    public void onNext(MovieResponse movieResponse) {
                         try {
-                            db = dbHelper.getWritableDatabase();
-                            final MovieDB movieDB = new MovieDB(db);
+
+                            Timber.d("Received API MovieResponse");
 
                             // If this is the first page, remove all items
                             if (pageNumber == 1) {
-                                MovieDB.removeAll(db);
+                                getActivity().getContentResolver().delete(
+                                        MovieEntry.CONTENT_URI,
+                                        null,
+                                        null
+                                );
                             }
+
+                            Vector<ContentValues> cVVector = new Vector<>(movieResponse.getMovies().size());
 
                             for (Movie movie : movieResponse.getMovies()) {
-                                movieDB.save(movie);
+
+                                ContentValues movieValues = new ContentValues();
+
+                                movieValues.put(MovieEntry._ID, movie.getId());
+                                movieValues.put(MovieEntry.COLUMN_ADULT, movie.isAdult() ? 1 : 0);
+                                movieValues.put(MovieEntry.COLUMN_BACKDROP_PATH, movie.getBackdropPath());
+                                movieValues.put(MovieEntry.COLUMN_GENRE_IDS, movie.getGenreIdsAsString());
+                                movieValues.put(MovieEntry.COLUMN_ORIGINAL_LANGUAGE, movie.getOriginalLanguage());
+                                movieValues.put(MovieEntry.COLUMN_ORIGINAL_TITLE, movie.getOriginalTitle());
+                                movieValues.put(MovieEntry.COLUMN_OVERVIEW, movie.getOverview());
+                                movieValues.put(MovieEntry.COLUMN_POPULARITY, movie.getPopularity());
+                                movieValues.put(MovieEntry.COLUMN_POSTER_PATH, movie.getPosterPath());
+                                movieValues.put(MovieEntry.COLUMN_RELEASE_DATE, movie.getReleaseDate());
+                                movieValues.put(MovieEntry.COLUMN_TITLE, movie.getTitle());
+                                movieValues.put(MovieEntry.COLUMN_VIDEO, movie.isVideo() ? 1 : 0);
+                                movieValues.put(MovieEntry.COLUMN_VOTE_AVERAGE, movie.getVoteAverage());
+                                movieValues.put(MovieEntry.COLUMN_VOTE_COUNT, movie.getVoteCount());
+
+                                cVVector.add(movieValues);
                             }
 
-                            // TODO move this to a ContentResolver and use the ContentResolver Observer pattern
-                            getActivity().runOnUiThread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    Cursor c = movieDB.findCursor(sortOrder);
-                                    Timber.d("swapCursor");
-                                    mAdapter.swapCursor(c);
-                                }
-                            });
+                            int inserted = 0;
 
-                        } finally {
-                            //MovieDatabaseHelper.close(db);
+                            // add to database
+                            if (cVVector.size() > 0) {
+                                ContentValues[] cvArray = new ContentValues[cVVector.size()];
+                                cVVector.toArray(cvArray);
+                                inserted = getActivity().getContentResolver().bulkInsert(MovieEntry.CONTENT_URI, cvArray);
+                            }
+
+                            Timber.d("FetchMovieTask complete. %d movies inserted.", inserted);
+
+                        } catch (Exception e) {
+                            Timber.e(e, null);
+                            // handle errors
                         }
-
-                    } catch (Exception e) {
-                        Timber.e(e, null);
-                        // handle errors
                     }
-
-                }
-            });
+                });
     }
 
     @Override
@@ -267,6 +299,19 @@ public class MovieListFragment extends Fragment {
     public void onDetach() {
         super.onDetach();
         mListener = null;
+
+        getActivity().getContentResolver().unregisterContentObserver(mMovieContentObserver);
+    }
+
+    @Override
+    public void onActivityCreated(Bundle savedInstanceState) {
+        super.onActivityCreated(savedInstanceState);
+
+        getLoaderManager().initLoader(MOVIE_LIST_LOADER, null, this);
+
+        mMovieContentObserver = getMovieContentObserver();
+
+        getActivity().getContentResolver().registerContentObserver(MovieEntry.CONTENT_URI, true, mMovieContentObserver);
     }
 
     /**
@@ -283,4 +328,77 @@ public class MovieListFragment extends Fragment {
         // TODO: Update argument type and name
         void onListFragmentInteraction(Movie item);
     }
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+    //
+    // LoaderManager.LoaderCallbacks<Cursor> implementation
+    //
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+
+    @Override
+    public Loader<Cursor> onCreateLoader(int i, Bundle bundle) {
+        Timber.d("onCreateLoader %s", mQueryType);
+
+        // This is called when a new Loader needs to be created.  This
+        // fragment only uses one loader, so we don't care about checking the id.
+
+        // Sort order:  Descending my popularity or vote average
+        String sortOrder;
+
+        if (mHighestRated.equals(mQueryType)) {
+            sortOrder = MovieEntry.COLUMN_VOTE_AVERAGE + " DESC";
+        } else {
+            sortOrder = MovieEntry.COLUMN_POPULARITY + " DESC";
+        }
+
+        Uri movieListUri = MovieEntry.CONTENT_URI;
+
+        return new CursorLoader(getActivity(),
+                movieListUri,
+                null, //FORECAST_COLUMNS,
+                null,
+                null,
+                sortOrder);
+    }
+
+    @Override
+    public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
+        mAdapter.swapCursor(data);
+        if (mPosition != ListView.INVALID_POSITION) {
+            // If we don't need to restart the loader, and there's a desired position to restore
+            // to, do so now.
+            mRecyclerView.smoothScrollToPosition(mPosition);
+        }
+    }
+
+    @Override
+    public void onLoaderReset(Loader<Cursor> loader) {
+        mAdapter.swapCursor(null);
+    }
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+    //
+    // MovieContentObserver
+    //
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+
+    static class MovieContentObserver extends ContentObserver {
+        final HandlerThread mHT;
+
+        static MovieContentObserver getTestContentObserver() {
+            HandlerThread ht = new HandlerThread("ContentObserverThread");
+            ht.start();
+            return new MovieContentObserver(ht);
+        }
+
+        private MovieContentObserver(HandlerThread ht) {
+            super(new Handler(ht.getLooper()));
+            mHT = ht;
+        }
+    }
+
+    static MovieContentObserver getMovieContentObserver() {
+        return MovieContentObserver.getTestContentObserver();
+    }
+
 }
