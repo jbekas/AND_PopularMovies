@@ -1,6 +1,5 @@
 package com.redgeckotech.popularmovies;
 
-import android.content.Context;
 import android.database.Cursor;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
@@ -14,8 +13,6 @@ import com.redgeckotech.popularmovies.model.Movie;
 import com.redgeckotech.popularmovies.widget.CursorRecyclerViewAdapter;
 import com.squareup.picasso.Picasso;
 
-import java.util.List;
-
 /**
  * {@link RecyclerView.Adapter} that can display a {@link Movie} and makes a call to the
  * specified {@link OnListFragmentInteractionListener}.
@@ -27,12 +24,11 @@ public class MyMovieListRecyclerViewAdapter extends CursorRecyclerViewAdapter<My
 
     private final String mPosterSize = "w185";
 
-    public MyMovieListRecyclerViewAdapter(Context context,
-                                          Cursor cursor,
+    public MyMovieListRecyclerViewAdapter(Cursor cursor,
                                           OnListFragmentInteractionListener listener,
                                           Picasso picasso) {
 
-        super(context, cursor);
+        super(cursor);
 
         mListener = listener;
         mPicasso = picasso;
@@ -46,7 +42,7 @@ public class MyMovieListRecyclerViewAdapter extends CursorRecyclerViewAdapter<My
     }
 
     @Override
-    public void onBindViewHolder(final ViewHolder viewHolder, Cursor cursor) {
+    public void onBindViewHolderCursor(final ViewHolder viewHolder, Cursor cursor) {
         viewHolder.mItem = MovieDB.createMovie(cursor);
 
         mPicasso.load(String.format("http://image.tmdb.org/t/p/%s/%s", mPosterSize, viewHolder.mItem.getPosterPath())).into(viewHolder.mContentView);

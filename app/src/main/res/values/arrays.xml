@@ -1,13 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string-array
-        name="sort_values">
-        <item>@string/most_popular</item>
-        <item>@string/highest_rated</item>
-    </string-array>
-    <string-array
-        name="sort_labels">
+    <string-array name="movie_list_types">
         <item>@string/most_popular_label</item>
         <item>@string/highest_rated_label</item>
+        <item>@string/favorites_label</item>
     </string-array>
 </resources>

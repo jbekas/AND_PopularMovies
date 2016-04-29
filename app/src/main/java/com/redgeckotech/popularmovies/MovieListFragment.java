@@ -14,8 +14,6 @@ import android.support.v4.app.Fragment;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.CursorLoader;
 import android.support.v4.content.Loader;
-import android.support.v7.app.ActionBar;
-import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -51,7 +49,6 @@ public class MovieListFragment extends Fragment implements LoaderManager.LoaderC
 
     private static final int MOVIE_LIST_LOADER = 0;
 
-    public static final String QUERY_TYPE = "QUERY_TYPE";
     public static final String PAGE_NUMBER = "PAGE_NUMBER";
 
     // Dependency injection points
@@ -70,11 +67,6 @@ public class MovieListFragment extends Fragment implements LoaderManager.LoaderC
     private RecyclerView mRecyclerView;
     private EndlessRecyclerOnScrollListener mEndlessScrollListener;
     private int mPosition = ListView.INVALID_POSITION;
-
-    private String mQueryType;
-
-    public static String mHighestRated;
-    public static String mMostPopular;
 
     private MovieContentObserver mMovieContentObserver;
 
@@ -102,13 +94,9 @@ public class MovieListFragment extends Fragment implements LoaderManager.LoaderC
         // Dependency injection
         ((MoviesApplication) getActivity().getApplicationContext()).getApplicationComponent().inject(this);
 
-        mMostPopular = getString(R.string.most_popular);
-        mHighestRated = getString(R.string.highest_rated);
-
         int pageNumber;
 
         if (savedInstanceState != null) {
-            mQueryType = savedInstanceState.getString(QUERY_TYPE);
             pageNumber = savedInstanceState.getInt(PAGE_NUMBER);
         } else {
             if (getArguments() != null) {
@@ -138,7 +126,7 @@ public class MovieListFragment extends Fragment implements LoaderManager.LoaderC
             mRecyclerView = (RecyclerView) view;
             mRecyclerView.setLayoutManager(mLayoutManager);
 
-            mAdapter = new MyMovieListRecyclerViewAdapter(getActivity(), null, mListener, mPicasso);
+            mAdapter = new MyMovieListRecyclerViewAdapter(null, mListener, mPicasso);
             mRecyclerView.setAdapter(mAdapter);
 
             // Add endless scroller
@@ -162,53 +150,45 @@ public class MovieListFragment extends Fragment implements LoaderManager.LoaderC
     }
 
     @Override
-    public void onResume() {
-        super.onResume();
-
-        Context context = getActivity();
-        if (context == null) {
-            return;
-        }
-
-        SharedPreferences sharedPrefs =
-                PreferenceManager.getDefaultSharedPreferences(context);
-        String queryType = sharedPrefs.getString(
-                getString(R.string.pref_sort_key),
-                getString(R.string.pref_sort_default));
-
-        if (!queryType.equals(mQueryType)) {
-            mQueryType = queryType;
-            updateMovieList(1);
-        }
-
-        ActionBar actionBar = ((AppCompatActivity) getActivity()).getSupportActionBar();
-        if (actionBar != null) {
-            if (mHighestRated.equals(mQueryType)) {
-                actionBar.setTitle(R.string.highest_rated_label);
-            } else {
-                actionBar.setTitle(R.string.most_popular_label);
-            }
-        }
-    }
-
-    @Override
     public void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
 
-        outState.putString(QUERY_TYPE, mQueryType);
         outState.putInt(PAGE_NUMBER, mEndlessScrollListener.getCurrentPage());
+    }
+
+    public void changeSelection(Constants.VIEW_TYPE viewType) {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getActivity());
+        String value = prefs.getString(Constants.SELECTED_VIEW_PREF, Constants.VIEW_TYPE.MOST_POPULAR.toString());
+        Constants.VIEW_TYPE currentViewType = Constants.VIEW_TYPE.valueOf(value);
+
+        if (currentViewType != viewType) {
+            mRecyclerView.scrollToPosition(0);
+
+            SharedPreferences.Editor edit = PreferenceManager.getDefaultSharedPreferences(getActivity()).edit();
+            edit.putString(Constants.SELECTED_VIEW_PREF, viewType.toString());
+            edit.apply();
+
+            getLoaderManager().restartLoader(MOVIE_LIST_LOADER, null, MovieListFragment.this);
+
+            updateMovieList(1);
+        }
     }
 
     public void updateMovieList(final int pageNumber) {
 
-        if (mQueryType == null) {
-            mQueryType = getString(R.string.pref_sort_default);
-        }
+
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getActivity());
+        String value = prefs.getString(Constants.SELECTED_VIEW_PREF, Constants.VIEW_TYPE.MOST_POPULAR.toString());
+        Constants.VIEW_TYPE viewType = Constants.VIEW_TYPE.valueOf(value);
+
+        Timber.d("updateMovieList viewType: %s", viewType);
 
         final Observable<MovieResponse> call;
 
-        if (mHighestRated.equals(mQueryType)) {
+        if (viewType == Constants.VIEW_TYPE.HIGHEST_RATED) {
             call = mMovieService.getTopRated(pageNumber);
+        } else if (viewType == Constants.VIEW_TYPE.MOST_POPULAR) {
+            call = mMovieService.getPopular(pageNumber);
         } else {
             call = mMovieService.getPopular(pageNumber);
         }
@@ -337,7 +317,7 @@ public class MovieListFragment extends Fragment implements LoaderManager.LoaderC
 
     @Override
     public Loader<Cursor> onCreateLoader(int i, Bundle bundle) {
-        Timber.d("onCreateLoader %s", mQueryType);
+        //Timber.d("onCreateLoader %s", mQueryType);
 
         // This is called when a new Loader needs to be created.  This
         // fragment only uses one loader, so we don't care about checking the id.
@@ -345,7 +325,13 @@ public class MovieListFragment extends Fragment implements LoaderManager.LoaderC
         // Sort order:  Descending my popularity or vote average
         String sortOrder;
 
-        if (mHighestRated.equals(mQueryType)) {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getActivity());
+        String value = prefs.getString(Constants.SELECTED_VIEW_PREF, Constants.VIEW_TYPE.MOST_POPULAR.toString());
+        Constants.VIEW_TYPE viewType = Constants.VIEW_TYPE.valueOf(value);
+
+        Timber.d("onCreateLoader viewType: %s", viewType);
+
+        if (viewType == Constants.VIEW_TYPE.HIGHEST_RATED) {
             sortOrder = MovieEntry.COLUMN_VOTE_AVERAGE + " DESC";
         } else {
             sortOrder = MovieEntry.COLUMN_POPULARITY + " DESC";
@@ -355,7 +341,7 @@ public class MovieListFragment extends Fragment implements LoaderManager.LoaderC
 
         return new CursorLoader(getActivity(),
                 movieListUri,
-                null, //FORECAST_COLUMNS,
+                null,
                 null,
                 null,
                 sortOrder);
@@ -363,12 +349,22 @@ public class MovieListFragment extends Fragment implements LoaderManager.LoaderC
 
     @Override
     public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
+//        if (data != null) {
+//            while (data.moveToNext()) {
+//                String title = data.getString(data.getColumnIndex(MovieEntry.COLUMN_TITLE));
+//                float voteAverage = data.getFloat(data.getColumnIndex(MovieEntry.COLUMN_VOTE_AVERAGE));
+//                float popularity = data.getFloat(data.getColumnIndex(MovieEntry.COLUMN_POPULARITY));
+//                Timber.d("%s %f %f", title, voteAverage, popularity);
+//            }
+//        }
+
         mAdapter.swapCursor(data);
-        if (mPosition != ListView.INVALID_POSITION) {
-            // If we don't need to restart the loader, and there's a desired position to restore
-            // to, do so now.
-            mRecyclerView.smoothScrollToPosition(mPosition);
-        }
+//        if (mPosition != ListView.INVALID_POSITION) {
+//            // If we don't need to restart the loader, and there's a desired position to restore
+//            // to, do so now.
+//            mRecyclerView.smoothScrollToPosition(mPosition);
+//        }
+
     }
 
     @Override
@@ -400,5 +396,4 @@ public class MovieListFragment extends Fragment implements LoaderManager.LoaderC
     static MovieContentObserver getMovieContentObserver() {
         return MovieContentObserver.getTestContentObserver();
     }
-
 }

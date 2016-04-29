@@ -11,16 +11,19 @@
     <string name="pref_sort_label">Sort Order</string>
 
     <!-- Key name and values for storing location in SharedPreferences [CHAR LIMIT=NONE] -->
-    <string name="pref_sort_key" translatable="false">sort_order</string>
-    <string name="most_popular" translatable="false">most_popular</string>
-    <string name="highest_rated" translatable="false">highest_rated</string>
+    <!--<string name="pref_sort_key" translatable="false">sort_order</string>-->
+    <!--<string name="most_popular" translatable="false">most_popular</string>-->
+    <!--<string name="highest_rated" translatable="false">highest_rated</string>-->
+    <!--<string name="favorites" translatable="false">favorites</string>-->
 
     <!-- Default postal code for location preference [CHAR LIMIT=NONE] -->
     <string name="pref_sort_default">most_popular</string>
 
     <string name="most_popular_label">Most Popular</string>
     <string name="highest_rated_label">Highest Rated</string>
+    <string name="favorites_label">Favorites</string>
 
     <string name="mark_as_favorite">Mark as Favorite</string>
     <string name="vote_average">%s/10</string>
+
 </resources>
