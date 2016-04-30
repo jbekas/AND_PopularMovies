@@ -18,12 +18,20 @@ import android.widget.TextView;
 import com.redgeckotech.popularmovies.db.FavoriteMovieDB;
 import com.redgeckotech.popularmovies.db.MovieDatabaseHelper;
 import com.redgeckotech.popularmovies.model.Movie;
+import com.redgeckotech.popularmovies.model.MovieReview;
+import com.redgeckotech.popularmovies.model.MovieReviewResponse;
+import com.redgeckotech.popularmovies.net.MovieService;
 import com.squareup.picasso.Picasso;
 
 import java.math.BigDecimal;
 
 import javax.inject.Inject;
 
+import butterknife.Bind;
+import butterknife.ButterKnife;
+import butterknife.OnClick;
+import rx.Subscriber;
+import rx.schedulers.Schedulers;
 import timber.log.Timber;
 
 /**
@@ -31,20 +39,26 @@ import timber.log.Timber;
  */
 public class MovieDetailActivityFragment extends Fragment {
 
+    @Inject MovieService mMovieService;
     @Inject Picasso mPicasso;
 
     private Movie mMovie;
     private final String mPosterSize = "w185";
 
-    private ScrollView mScrollView;
-    private ImageView mMoviePoster;
-    private TextView mMovieTitle;
-    private TextView mOverview;
-    private TextView mYear;
-    private TextView mVoteAverage;
-    private FloatingActionButton mFavoriteButton;
+    @Bind(R.id.movie_detail_scrollview) ScrollView mScrollView;
+    @Bind(R.id.movie_poster) ImageView mMoviePoster;
+    @Bind(R.id.movie_title) TextView mMovieTitle;
+    @Bind(R.id.overview) TextView mOverview;
+    @Bind(R.id.year) TextView mYear;
+    @Bind(R.id.vote_average) TextView mVoteAverage;
+    @Bind(R.id.favorite_button) FloatingActionButton mFavoriteButton;
+    @Bind(R.id.review_layout) ViewGroup mReviewLayout;
+    @Bind(R.id.review_list) ViewGroup mReviewList;
 
     private MovieDatabaseHelper mDbHelper;
+
+    //private MovieReviewAdapter mMovieReviewAdapter;
+    //private List<MovieReview> mMovieReviews = new ArrayList<>();
 
     private boolean mFavorite;
 
@@ -99,20 +113,7 @@ public class MovieDetailActivityFragment extends Fragment {
 
         View rootView = inflater.inflate(R.layout.fragment_movie_detail, container, false);
 
-        mScrollView = (ScrollView) rootView.findViewById(R.id.movie_detail_scrollview);
-        mMoviePoster = (ImageView) rootView.findViewById(R.id.movie_poster);
-        mMovieTitle = (TextView) rootView.findViewById(R.id.movie_title);
-        mOverview = (TextView) rootView.findViewById(R.id.overview);
-        mYear = (TextView) rootView.findViewById(R.id.year);
-        mVoteAverage = (TextView) rootView.findViewById(R.id.vote_average);
-
-        mFavoriteButton = (FloatingActionButton) rootView.findViewById(R.id.favorite_button);
-        mFavoriteButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                toggleFavorite(v);
-            }
-        });
+        ButterKnife.bind(this, rootView);
 
         updateUI();
 
@@ -124,6 +125,12 @@ public class MovieDetailActivityFragment extends Fragment {
         super.onSaveInstanceState(outState);
 
         outState.putParcelable(Constants.EXTRA_MOVIE, mMovie);
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        retrieveReviews(1);
     }
 
     public void updateUI() {
@@ -157,6 +164,7 @@ public class MovieDetailActivityFragment extends Fragment {
         }
     }
 
+    @OnClick(R.id.favorite_button)
     public void toggleFavorite(View v) {
         Timber.d("favorite clicked");
 
@@ -178,5 +186,57 @@ public class MovieDetailActivityFragment extends Fragment {
         }
 
         updateUI();
+    }
+
+    public void retrieveReviews(final int pageNumber) {
+
+        Timber.d("retrieveReviews");
+
+        mMovieService.getReviews(mMovie.getId(), pageNumber)
+                .subscribeOn(Schedulers.io())
+                .observeOn(Schedulers.io())
+                .subscribe(new Subscriber<MovieReviewResponse>() {
+                    @Override
+                    public void onCompleted() {
+                        Timber.d("onCompleted");
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                        Timber.e(e, null);
+                    }
+
+                    @Override
+                    public void onNext(final MovieReviewResponse movieReviewResponse) {
+                        try {
+
+
+                            Timber.d("Received API MovieReviewResponse");
+
+                            getActivity().runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    mReviewLayout.setVisibility(movieReviewResponse.getMovieReviews().size() > 0 ? View.VISIBLE : View.GONE);
+
+                                    mReviewList.removeAllViews();
+
+                                    for (MovieReview review : movieReviewResponse.getMovieReviews()) {
+                                        String formattedReview = String.format("Author: %s\n\n%s\n\n", review.getAuthor(), review.getContent());
+
+                                        TextView textView = new TextView(getActivity());
+                                        textView.setText(formattedReview);
+                                        mReviewList.addView(textView);
+                                    }
+                                }
+                            });
+
+                            Timber.d("FetchMovieReviewsTask complete. %d reviews retrieved.", movieReviewResponse.getMovieReviews().size());
+
+                        } catch (Exception e) {
+                            Timber.e(e, null);
+                            // handle errors
+                        }
+                    }
+                });
     }
 }
