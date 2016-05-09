@@ -219,11 +219,18 @@ public class MovieListFragment extends Fragment implements LoaderManager.LoaderC
     @Override
     public void onStart() {
         super.onStart();
+
+        //Timber.d("onStart called.");
+
+        updateMovieList(1);
     }
 
     @Override
     public void onResume() {
         super.onResume();
+
+        //Timber.d("onResume called.");
+
         updateNavigationHeader();
     }
 
@@ -365,6 +372,8 @@ public class MovieListFragment extends Fragment implements LoaderManager.LoaderC
     public void onActivityCreated(Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
 
+        Timber.d("onActivityCreated called.");
+
         getLoaderManager().initLoader(MOVIE_LIST_LOADER, null, this);
 
         mMovieContentObserver = getMovieContentObserver();
@@ -453,7 +462,7 @@ public class MovieListFragment extends Fragment implements LoaderManager.LoaderC
     static class MovieContentObserver extends ContentObserver {
         final HandlerThread mHT;
 
-        static MovieContentObserver getTestContentObserver() {
+        static MovieContentObserver getMovieContentObserver() {
             HandlerThread ht = new HandlerThread("ContentObserverThread");
             ht.start();
             return new MovieContentObserver(ht);
@@ -463,9 +472,16 @@ public class MovieListFragment extends Fragment implements LoaderManager.LoaderC
             super(new Handler(ht.getLooper()));
             mHT = ht;
         }
+
+        @Override
+        public void onChange(boolean selfChange) {
+            Timber.d("onChange %s", selfChange);
+            // Do nothing.  Subclass should override.
+        }
+
     }
 
     static MovieContentObserver getMovieContentObserver() {
-        return MovieContentObserver.getTestContentObserver();
+        return MovieContentObserver.getMovieContentObserver();
     }
 }
