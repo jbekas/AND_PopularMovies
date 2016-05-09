@@ -1,6 +1,7 @@
 package com.redgeckotech.popularmovies;
 
 import android.app.Activity;
+import android.content.ContentValues;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
@@ -20,6 +21,7 @@ import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.redgeckotech.popularmovies.data.MovieContract.FavoritesEntry;
 import com.redgeckotech.popularmovies.db.FavoriteMovieDB;
 import com.redgeckotech.popularmovies.db.MovieDatabaseHelper;
 import com.redgeckotech.popularmovies.model.Movie;
@@ -246,29 +248,32 @@ public class MovieDetailFragment extends Fragment {
     public void toggleFavorite(View v) {
         Timber.d("favorite clicked");
 
-        SQLiteDatabase db = null;
-        try {
-            db = mDbHelper.getWritableDatabase();
-            FavoriteMovieDB favoriteMovieDB = new FavoriteMovieDB(db);
+        if (mFavorite) {
+            mFavorite = false;
 
-            if (mFavorite) {
-                favoriteMovieDB.removeFavorite(mMovie.getId());
-                mFavorite = false;
-            } else {
-                favoriteMovieDB.addFavorite(mMovie.getId());
-                mFavorite = true;
-            }
+            int deleted = getActivity().getContentResolver().delete(FavoritesEntry.FAVORITES_URI,
+                    FavoritesEntry.COLUMN_MOVIE_ID + " = ?",
+                    new String[]{Integer.toString(mMovie.getId())});
+            Timber.d("Removed %d favorite.", deleted);
 
-            if (getActivity() != null) {
-                getActivity().runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        Toast.makeText(getActivity(), mFavorite ? R.string.favorite_saved : R.string.favorite_removed, Toast.LENGTH_SHORT).show();
-                    }
-                });
-            }
-        } finally {
-            MovieDatabaseHelper.close(db);
+        } else {
+            mFavorite = true;
+
+            ContentValues favoriteValues = new ContentValues();
+
+            favoriteValues.put(FavoritesEntry.COLUMN_MOVIE_ID, mMovie.getId());
+
+            getActivity().getContentResolver().insert(FavoritesEntry.FAVORITES_URI, favoriteValues);
+            Timber.d("Inserted favorite.");
+        }
+
+        if (getActivity() != null) {
+            getActivity().runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    Toast.makeText(getActivity(), mFavorite ? R.string.favorite_saved : R.string.favorite_removed, Toast.LENGTH_SHORT).show();
+                }
+            });
         }
 
         updateUI();

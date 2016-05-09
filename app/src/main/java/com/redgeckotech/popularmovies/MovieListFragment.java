@@ -25,7 +25,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
-import com.redgeckotech.popularmovies.data.MovieContract;
+import com.redgeckotech.popularmovies.data.MovieContract.FavoritesEntry;
 import com.redgeckotech.popularmovies.data.MovieContract.HighestRatedEntry;
 import com.redgeckotech.popularmovies.data.MovieContract.MostPopularEntry;
 import com.redgeckotech.popularmovies.data.MovieContract.MovieEntry;
@@ -427,6 +427,7 @@ public class MovieListFragment extends Fragment implements LoaderManager.LoaderC
         mMovieContentObserver = getMovieContentObserver();
 
         getActivity().getContentResolver().registerContentObserver(MovieEntry.CONTENT_URI, true, mMovieContentObserver);
+        getActivity().getContentResolver().registerContentObserver(FavoritesEntry.FAVORITES_URI, true, mMovieContentObserver);
     }
 
     /**
@@ -472,7 +473,7 @@ public class MovieListFragment extends Fragment implements LoaderManager.LoaderC
             queryUri = MostPopularEntry.MOST_POPULAR_URI;
             sortOrder = MostPopularEntry.COLUMN_POSITION + " ASC";
         } else if (viewType == Constants.VIEW_TYPE.FAVORITES) {
-            queryUri = MovieContract.FavoritesEntry.FAVORITES_URI;
+            queryUri = FavoritesEntry.FAVORITES_URI;
             sortOrder = MovieEntry.COLUMN_TITLE + " ASC";
         } else {
             queryUri = null;

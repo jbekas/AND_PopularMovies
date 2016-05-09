@@ -198,7 +198,7 @@ public class MovieProvider extends ContentProvider {
 
         switch (match) {
             case FAVORITES: {
-                long _id = db.insertWithOnConflict(MovieEntry.TABLE_NAME, null, values, SQLiteDatabase.CONFLICT_NONE);
+                long _id = db.insertWithOnConflict(FavoritesEntry.TABLE_NAME, null, values, SQLiteDatabase.CONFLICT_NONE);
                 if ( _id > 0 )
                     returnUri = MovieEntry.buildMovieUri(_id);
                 else
