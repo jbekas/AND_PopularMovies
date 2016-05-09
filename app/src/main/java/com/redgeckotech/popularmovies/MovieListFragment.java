@@ -23,9 +23,11 @@ import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ListView;
 import android.widget.TextView;
 
+import com.redgeckotech.popularmovies.data.MovieContract;
+import com.redgeckotech.popularmovies.data.MovieContract.HighestRatedEntry;
+import com.redgeckotech.popularmovies.data.MovieContract.MostPopularEntry;
 import com.redgeckotech.popularmovies.data.MovieContract.MovieEntry;
 import com.redgeckotech.popularmovies.model.Movie;
 import com.redgeckotech.popularmovies.model.MovieResponse;
@@ -55,6 +57,29 @@ import timber.log.Timber;
 public class MovieListFragment extends Fragment implements LoaderManager.LoaderCallbacks<Cursor> {
 
     private static final int MOVIE_LIST_LOADER = 0;
+
+    private static final String[] MOVIE_COLUMNS = {
+            // In this case the id needs to be fully qualified with a table name, since
+            // the content provider joins the location & weather tables in the background
+            // (both have an _id column)
+            // On the one hand, that's annoying.  On the other, you can search the weather table
+            // using the location set by the user, which is only in the Location table.
+            // So the convenience is worth it.
+            MovieEntry.TABLE_NAME + "." + MovieEntry._ID,
+            MovieEntry.COLUMN_ADULT,
+            MovieEntry.COLUMN_BACKDROP_PATH,
+            MovieEntry.COLUMN_GENRE_IDS,
+            MovieEntry.COLUMN_ORIGINAL_LANGUAGE,
+            MovieEntry.COLUMN_ORIGINAL_TITLE,
+            MovieEntry.COLUMN_OVERVIEW,
+            MovieEntry.COLUMN_POPULARITY,
+            MovieEntry.COLUMN_POSTER_PATH,
+            MovieEntry.COLUMN_RELEASE_DATE,
+            MovieEntry.COLUMN_TITLE,
+            MovieEntry.COLUMN_VIDEO,
+            MovieEntry.COLUMN_VOTE_AVERAGE,
+            MovieEntry.COLUMN_VOTE_COUNT
+    };
 
     public static final String PAGE_NUMBER = "PAGE_NUMBER";
 
@@ -220,16 +245,12 @@ public class MovieListFragment extends Fragment implements LoaderManager.LoaderC
     public void onStart() {
         super.onStart();
 
-        //Timber.d("onStart called.");
-
         updateMovieList(1);
     }
 
     @Override
     public void onResume() {
         super.onResume();
-
-        //Timber.d("onResume called.");
 
         updateNavigationHeader();
     }
@@ -261,21 +282,31 @@ public class MovieListFragment extends Fragment implements LoaderManager.LoaderC
 
     public void updateMovieList(final int pageNumber) {
 
+        final int RESULTS_PER_PAGE = 20; // TODO Specify in Query
 
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getActivity());
         String value = prefs.getString(Constants.SELECTED_VIEW_PREF, Constants.VIEW_TYPE.MOST_POPULAR.toString());
-        Constants.VIEW_TYPE viewType = Constants.VIEW_TYPE.valueOf(value);
+        final Constants.VIEW_TYPE viewType = Constants.VIEW_TYPE.valueOf(value);
 
         Timber.d("updateMovieList viewType: %s", viewType);
 
         final Observable<MovieResponse> call;
+        final Uri rankingUri;
 
         if (viewType == Constants.VIEW_TYPE.HIGHEST_RATED) {
             call = mMovieService.getTopRated(pageNumber);
+            rankingUri = HighestRatedEntry.HIGHEST_RATED_URI;
         } else if (viewType == Constants.VIEW_TYPE.MOST_POPULAR) {
             call = mMovieService.getPopular(pageNumber);
+            rankingUri = MostPopularEntry.MOST_POPULAR_URI;
         } else {
-            call = mMovieService.getPopular(pageNumber);
+            call = null;
+            rankingUri = null;
+        }
+
+        if (call == null) {
+            Timber.i("viewType is null, not refreshing movie list.");
+            return;
         }
 
         call.subscribeOn(Schedulers.io())
@@ -297,19 +328,14 @@ public class MovieListFragment extends Fragment implements LoaderManager.LoaderC
 
                             Timber.d("Received API MovieResponse");
 
-                            // If this is the first page, remove all items
-                            if (pageNumber == 1) {
-                                getActivity().getContentResolver().delete(
-                                        MovieEntry.CONTENT_URI,
-                                        null,
-                                        null
-                                );
-                            }
+                            Vector<ContentValues> cVMovieVector = new Vector<>(movieResponse.getMovies().size());
+                            Vector<ContentValues> cVPositionVector = new Vector<>(movieResponse.getMovies().size());
 
-                            Vector<ContentValues> cVVector = new Vector<>(movieResponse.getMovies().size());
+                            int startingPosition = (pageNumber - 1) * RESULTS_PER_PAGE;
 
-                            for (Movie movie : movieResponse.getMovies()) {
+                            for (int position = 0; position < movieResponse.getMovies().size(); position++) {
 
+                                Movie movie = movieResponse.getMovies().get(position);
                                 ContentValues movieValues = new ContentValues();
 
                                 movieValues.put(MovieEntry._ID, movie.getId());
@@ -327,20 +353,39 @@ public class MovieListFragment extends Fragment implements LoaderManager.LoaderC
                                 movieValues.put(MovieEntry.COLUMN_VOTE_AVERAGE, movie.getVoteAverage());
                                 movieValues.put(MovieEntry.COLUMN_VOTE_COUNT, movie.getVoteCount());
 
-                                cVVector.add(movieValues);
-                            }
+                                cVMovieVector.add(movieValues);
 
-                            int inserted = 0;
+                                ContentValues positionValues = new ContentValues();
+
+                                positionValues.put(MostPopularEntry.COLUMN_POSITION, startingPosition + position);
+                                positionValues.put(MostPopularEntry.COLUMN_MOVIE_ID, movie.getId());
+
+                                cVPositionVector.add(positionValues);
+                            }
 
                             // add to database
-                            if (cVVector.size() > 0) {
-                                ContentValues[] cvArray = new ContentValues[cVVector.size()];
-                                cVVector.toArray(cvArray);
-                                inserted = getActivity().getContentResolver().bulkInsert(MovieEntry.CONTENT_URI, cvArray);
+                            if (cVMovieVector.size() > 0) {
+                                ContentValues[] cvArray = new ContentValues[cVMovieVector.size()];
+                                cVMovieVector.toArray(cvArray);
+                                int moviesInserted = getActivity().getContentResolver().bulkInsert(MovieEntry.CONTENT_URI, cvArray);
+                                Timber.d("FetchMovieTask complete. %d movies inserted.", moviesInserted);
+
+                            } else {
+                                Timber.d("FetchMovieTask complete. NO movies inserted.");
                             }
 
-                            Timber.d("FetchMovieTask complete. %d movies inserted.", inserted);
+                            if (cVPositionVector.size() > 0) {
 
+                                int deleted = getActivity().getContentResolver().delete(rankingUri,
+                                        MostPopularEntry.COLUMN_POSITION + " >= ?",
+                                        new String[]{Integer.toString(startingPosition)});
+                                Timber.d("Deleted %d %s entries.", deleted, viewType);
+
+                                ContentValues[] cvArray = new ContentValues[cVPositionVector.size()];
+                                cVPositionVector.toArray(cvArray);
+                                int inserted = getActivity().getContentResolver().bulkInsert(rankingUri, cvArray);
+                                Timber.d("Inserted %d %s entries.", inserted, viewType);
+                            }
                         } catch (Exception e) {
                             Timber.e(e, null);
                             // handle errors
@@ -404,13 +449,12 @@ public class MovieListFragment extends Fragment implements LoaderManager.LoaderC
 
     @Override
     public Loader<Cursor> onCreateLoader(int i, Bundle bundle) {
-        //Timber.d("onCreateLoader %s", mQueryType);
 
-        // This is called when a new Loader needs to be created.  This
-        // fragment only uses one loader, so we don't care about checking the id.
+        // This is called when a new Loader needs to be created.
 
-        // Sort order:  Descending my popularity or vote average
+        // Sort order:  Different for each query type
         String sortOrder;
+        Uri queryUri;
 
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getActivity());
         String value = prefs.getString(Constants.SELECTED_VIEW_PREF, Constants.VIEW_TYPE.MOST_POPULAR.toString());
@@ -419,16 +463,22 @@ public class MovieListFragment extends Fragment implements LoaderManager.LoaderC
         Timber.d("onCreateLoader viewType: %s", viewType);
 
         if (viewType == Constants.VIEW_TYPE.HIGHEST_RATED) {
-            sortOrder = MovieEntry.COLUMN_VOTE_AVERAGE + " DESC";
+            queryUri = HighestRatedEntry.HIGHEST_RATED_URI;
+            sortOrder = HighestRatedEntry.COLUMN_POSITION + " ASC";
+        } else if (viewType == Constants.VIEW_TYPE.MOST_POPULAR) {
+            queryUri = MostPopularEntry.MOST_POPULAR_URI;
+            sortOrder = MostPopularEntry.COLUMN_POSITION + " ASC";
+        } else if (viewType == Constants.VIEW_TYPE.FAVORITES) {
+            queryUri = MovieContract.FavoritesEntry.FAVORITES_URI;
+            sortOrder = MovieEntry.COLUMN_TITLE + " ASC";
         } else {
-            sortOrder = MovieEntry.COLUMN_POPULARITY + " DESC";
+            queryUri = null;
+            sortOrder = null;
         }
 
-        Uri movieListUri = MovieEntry.CONTENT_URI;
-
         return new CursorLoader(getActivity(),
-                movieListUri,
-                null,
+                queryUri,
+                MOVIE_COLUMNS,
                 null,
                 null,
                 sortOrder);
@@ -436,15 +486,6 @@ public class MovieListFragment extends Fragment implements LoaderManager.LoaderC
 
     @Override
     public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
-//        if (data != null) {
-//            while (data.moveToNext()) {
-//                String title = data.getString(data.getColumnIndex(MovieEntry.COLUMN_TITLE));
-//                float voteAverage = data.getFloat(data.getColumnIndex(MovieEntry.COLUMN_VOTE_AVERAGE));
-//                float popularity = data.getFloat(data.getColumnIndex(MovieEntry.COLUMN_POPULARITY));
-//                Timber.d("%s %f %f", title, voteAverage, popularity);
-//            }
-//        }
-
         mAdapter.swapCursor(data);
     }
 
@@ -456,6 +497,7 @@ public class MovieListFragment extends Fragment implements LoaderManager.LoaderC
     ///////////////////////////////////////////////////////////////////////////////////////////////
     //
     // MovieContentObserver
+    // NOTE: This is not currently used for anything.
     //
     ///////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -476,9 +518,7 @@ public class MovieListFragment extends Fragment implements LoaderManager.LoaderC
         @Override
         public void onChange(boolean selfChange) {
             Timber.d("onChange %s", selfChange);
-            // Do nothing.  Subclass should override.
         }
-
     }
 
     static MovieContentObserver getMovieContentObserver() {

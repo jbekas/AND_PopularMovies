@@ -28,9 +28,12 @@ public class MovieContract {
     // as the ContentProvider hasn't been given any information on what to do with "givemeroot".
     // At least, let's hope not.  Don't be that dev, reader.  Don't be that dev.
     public static final String PATH_MOVIE = "movie";
+    public static final String PATH_MOST_POPULAR = "most_popular";
+    public static final String PATH_HIGHEST_RATED = "highest_rated";
+    public static final String PATH_FAVORITES = "favorites";
 
     /* Inner class that defines the table contents of the movie table */
-    public static final class MovieEntry implements BaseColumns {
+    public static class MovieEntry implements BaseColumns {
 
         public static final Uri CONTENT_URI =
                 BASE_CONTENT_URI.buildUpon().appendPath(PATH_MOVIE).build();
@@ -65,6 +68,47 @@ public class MovieContract {
             String idStr = uri.getPathSegments().get(1);
             return Long.parseLong(idStr);
         }
+    }
+
+    public static final class MostPopularEntry implements BaseColumns {
+
+        public static final Uri MOST_POPULAR_URI =
+                BASE_CONTENT_URI.buildUpon().appendPath(PATH_MOST_POPULAR).build();
+
+        public static final String MOST_POPULAR_TYPE =
+                ContentResolver.CURSOR_DIR_BASE_TYPE + "/" + CONTENT_AUTHORITY + "/" + PATH_MOST_POPULAR;
+
+        public static final String TABLE_NAME = "most_popular";
+
+        public static final String COLUMN_POSITION = "position";
+        public static final String COLUMN_MOVIE_ID = "movie_id";
+    }
+
+    public static final class HighestRatedEntry implements BaseColumns {
+
+        public static final Uri HIGHEST_RATED_URI =
+                BASE_CONTENT_URI.buildUpon().appendPath(PATH_HIGHEST_RATED).build();
+
+        public static final String HIGHEST_RATED_TYPE =
+                ContentResolver.CURSOR_DIR_BASE_TYPE + "/" + CONTENT_AUTHORITY + "/" + PATH_HIGHEST_RATED;
+
+        public static final String TABLE_NAME = "highest_rated";
+
+        public static final String COLUMN_POSITION = "position";
+        public static final String COLUMN_MOVIE_ID = "movie_id";
+    }
+
+    public static final class FavoritesEntry implements BaseColumns {
+
+        public static final Uri FAVORITES_URI =
+                BASE_CONTENT_URI.buildUpon().appendPath(PATH_FAVORITES).build();
+
+        public static final String FAVORITES_TYPE =
+                ContentResolver.CURSOR_DIR_BASE_TYPE + "/" + CONTENT_AUTHORITY + "/" + PATH_FAVORITES;
+
+        public static final String TABLE_NAME = "favorites";
+
+        public static final String COLUMN_MOVIE_ID = "movie_id";
     }
 }
 

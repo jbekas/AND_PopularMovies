@@ -39,11 +39,11 @@ public class MainActivity
 //        Spinner spinner = (Spinner) toolbar.findViewById(R.id.spinner);
 
 //        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
-//        String value = prefs.getString(Constants.SELECTED_VIEW_PREF, Constants.VIEW_TYPE.MOST_POPULAR.toString());
+//        String value = prefs.getString(Constants.SELECTED_VIEW_PREF, Constants.VIEW_TYPE.PATH_MOST_POPULAR.toString());
 //        Constants.VIEW_TYPE viewType = Constants.VIEW_TYPE.valueOf(value);
 //
 //        switch (viewType) {
-//            case MOST_POPULAR:
+//            case PATH_MOST_POPULAR:
 //                spinner.setSelection(0);
 //                break;
 //            case HIGHEST_RATED:
@@ -60,7 +60,7 @@ public class MainActivity
 //                Timber.d("on item selected");
 //                switch (position) {
 //                    case 0:
-//                        movieListFragment.changeSelection(Constants.VIEW_TYPE.MOST_POPULAR);
+//                        movieListFragment.changeSelection(Constants.VIEW_TYPE.PATH_MOST_POPULAR);
 //                        break;
 //                    case 1:
 //                        movieListFragment.changeSelection(Constants.VIEW_TYPE.HIGHEST_RATED);

@@ -35,6 +35,8 @@ public class MovieDatabaseHelper extends SQLiteOpenHelper {
     public void onCreate(SQLiteDatabase db) {
         Timber.d("onCreate called.");
         MovieDB.createTable(db);
+        MostPopularDB.createTable(db);
+        HighestRatedDB.createTable(db);
         FavoriteMovieDB.createTable(db);
     }
 
@@ -51,6 +53,12 @@ public class MovieDatabaseHelper extends SQLiteOpenHelper {
         // The simplest case is to drop the old table and create a new one.
         MovieDB.dropTable(db);
         MovieDB.createTable(db);
+
+        MostPopularDB.dropTable(db);
+        MostPopularDB.createTable(db);
+
+        HighestRatedDB.dropTable(db);
+        HighestRatedDB.createTable(db);
 
         // If necessary, upgrade favorites table so that favorites are not lost.
     }
@@ -77,6 +85,8 @@ public class MovieDatabaseHelper extends SQLiteOpenHelper {
         SQLiteDatabase db = dbHelper.getWritableDatabase();
 
         MovieDB.removeAll(db);
+        MostPopularDB.removeAll(db);
+        HighestRatedDB.removeAll(db);
         FavoriteMovieDB.removeAll(db);
 
         db.execSQL("VACUUM");
