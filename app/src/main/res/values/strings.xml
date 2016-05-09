@@ -29,8 +29,10 @@
     <string name="related_videos">Related Videos</string>
     <string name="reviews">Reviews</string>
     <string name="error_no_video_player">No video player available.</string>
+    <string name="error_no_share_application">No sharing applications are available.</string>
     <string name="author">"Author: "</string>
     <string name="favorite_saved">Movie was added to your favorites</string>
     <string name="favorite_removed">Movie was removed from your favorites</string>
+    <string name="share_trailer">"Check out this trailer for %1$s: %2$s"</string>
 
 </resources>

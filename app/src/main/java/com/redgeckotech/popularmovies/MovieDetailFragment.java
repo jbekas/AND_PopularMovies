@@ -207,7 +207,7 @@ public class MovieDetailFragment extends Fragment {
 
                             mRelatedVideoGroup.removeAllViews();
 
-                            for (RelatedVideo relatedVideo : mRelatedVideos) {
+                            for (final RelatedVideo relatedVideo : mRelatedVideos) {
                                 if (Constants.TEXT_YOUTUBE_SITE.equals(relatedVideo.getSite()) && Constants.TEXT_TRAILER.equals(relatedVideo.getType())) {
                                     View view = inflater.inflate(R.layout.template_related_video, mRelatedVideoGroup, false);
 
@@ -232,6 +232,19 @@ public class MovieDetailFragment extends Fragment {
                                     TextView name = (TextView) view.findViewById(R.id.trailer_name);
                                     name.setText(relatedVideo.getName());
 
+                                    final ImageView share = (ImageView) view.findViewById(R.id.trailer_share);
+                                    share.setOnClickListener(new View.OnClickListener() {
+                                        @Override
+                                        public void onClick(View v) {
+                                            Intent shareIntent = createShareMovieTrailerIntent(relatedVideo);
+                                            if (shareIntent == null) {
+                                                Toast.makeText(getActivity(), R.string.error_no_share_application, Toast.LENGTH_SHORT).show();
+                                                return;
+                                            }
+
+                                            startActivity(shareIntent);
+                                        }
+                                    });
                                     mRelatedVideoGroup.addView(view);
                                 }
                             }
@@ -357,6 +370,25 @@ public class MovieDetailFragment extends Fragment {
                         }
                     }
                 });
+    }
+
+    private Intent createShareMovieTrailerIntent(RelatedVideo relatedVideo) {
+        Intent shareIntent = new Intent(Intent.ACTION_SEND);
+
+        shareIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_WHEN_TASK_RESET);
+        shareIntent.setType("text/plain");
+
+        String videoPath = String.format(Constants.TEXT_YOUTUBE_URI, relatedVideo.getKey());
+        String shareText = getString(R.string.share_trailer, mMovie.getTitle(), videoPath);
+        shareIntent.putExtra(Intent.EXTRA_TEXT, shareText);
+
+        PackageManager manager = getActivity().getPackageManager();
+        List<ResolveInfo> infos = manager.queryIntentActivities(shareIntent, 0);
+        if (infos.size() <= 0) {
+            return null;
+        }
+
+        return shareIntent;
     }
 
 }
