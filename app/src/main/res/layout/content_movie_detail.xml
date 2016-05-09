@@ -1,4 +1,4 @@
-<fragment android:id="@+id/movie_detail_fragment"
+<FrameLayout android:id="@+id/movie_detail_container"
           android:name="com.redgeckotech.popularmovies.MovieDetailFragment"
           xmlns:android="http://schemas.android.com/apk/res/android"
           xmlns:app="http://schemas.android.com/apk/res-auto"

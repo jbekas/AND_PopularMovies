@@ -184,18 +184,21 @@ public class MovieListFragment extends Fragment implements LoaderManager.LoaderC
     @OnClick(R.id.most_popular)
     public void onMostPopular(View v) {
         changeSelection(Constants.VIEW_TYPE.MOST_POPULAR);
+        mListener.onListFragmentInteraction(null);
         updateNavigationHeader();
     }
 
     @OnClick(R.id.highest_rated)
     public void onHighestRated(View v) {
         changeSelection(Constants.VIEW_TYPE.HIGHEST_RATED);
+        mListener.onListFragmentInteraction(null);
         updateNavigationHeader();
     }
 
     @OnClick(R.id.favorites)
     public void onFavorites(View v) {
         changeSelection(Constants.VIEW_TYPE.FAVORITES);
+        mListener.onListFragmentInteraction(null);
         updateNavigationHeader();
     }
 

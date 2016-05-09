@@ -86,8 +86,14 @@ public class MovieDetailFragment extends Fragment {
         if (savedInstanceState != null) {
             mMovie = savedInstanceState.getParcelable(Constants.EXTRA_MOVIE);
         } else {
-            Intent intent = getActivity().getIntent();
-            mMovie = intent.getParcelableExtra(Constants.EXTRA_MOVIE);
+            if (getArguments() != null) {
+                mMovie = getArguments().getParcelable(Constants.EXTRA_MOVIE);
+            }
+        }
+
+        if (mMovie == null) {
+            Timber.w("mMovie is null.");
+            return;
         }
 
         mDbHelper = MovieDatabaseHelper.getInstance(getActivity());
@@ -153,79 +159,83 @@ public class MovieDetailFragment extends Fragment {
             activity.runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    if (mMovie == null) {
-                        mScrollView.setVisibility(View.INVISIBLE);
-                    } else {
-                        mScrollView.setVisibility(View.VISIBLE);
-                        mPicasso.load(String.format("http://image.tmdb.org/t/p/%s/%s", mPosterSize, mMovie.getPosterPath())).into(mMoviePoster);
+                    try {
+                        if (mMovie == null) {
+                            mScrollView.setVisibility(View.INVISIBLE);
+                        } else {
+                            mScrollView.setVisibility(View.VISIBLE);
+                            mPicasso.load(String.format("http://image.tmdb.org/t/p/%s/%s", mPosterSize, mMovie.getPosterPath())).into(mMoviePoster);
 
-                        mMovieTitle.setText(mMovie.getTitle());
-                        mOverview.setText(mMovie.getOverview());
+                            mMovieTitle.setText(mMovie.getTitle());
+                            mOverview.setText(mMovie.getOverview());
 
-                        String releaseYear = mMovie.getReleaseYear();
-                        mYear.setText(getString(R.string.release_year, releaseYear));
-                        mYear.setVisibility(releaseYear == null ? View.GONE : View.VISIBLE);
+                            String releaseYear = mMovie.getReleaseYear();
+                            mYear.setText(getString(R.string.release_year, releaseYear));
+                            mYear.setVisibility(releaseYear == null ? View.GONE : View.VISIBLE);
 
-                        // Limit decimals to 2, but strip if trailing decimals are 0
-                        BigDecimal bd = new BigDecimal(mMovie.getVoteAverage()).setScale(2, BigDecimal.ROUND_HALF_UP).stripTrailingZeros();
-                        mVoteAverage.setText(getString(R.string.vote_average, bd.toString()));
+                            // Limit decimals to 2, but strip if trailing decimals are 0
+                            BigDecimal bd = new BigDecimal(mMovie.getVoteAverage()).setScale(2, BigDecimal.ROUND_HALF_UP).stripTrailingZeros();
+                            mVoteAverage.setText(getString(R.string.vote_average, bd.toString()));
 
-                        mMovieTitle.setSelected(true);
+                            mMovieTitle.setSelected(true);
 
-                        mFavoriteButton.setColorFilter(mFavorite ? activeColor : inactiveColor, PorterDuff.Mode.SRC_ATOP);
+                            mFavoriteButton.setColorFilter(mFavorite ? activeColor : inactiveColor, PorterDuff.Mode.SRC_ATOP);
 
-                        LayoutInflater inflater = activity.getLayoutInflater();
+                            LayoutInflater inflater = activity.getLayoutInflater();
 
-                        // Movie Reviews
-                        mReviewLayout.setVisibility(mReviews.size() > 0 ? View.VISIBLE : View.GONE);
+                            // Movie Reviews
+                            mReviewLayout.setVisibility(mReviews.size() > 0 ? View.VISIBLE : View.GONE);
 
-                        mReviewGroup.removeAllViews();
+                            mReviewGroup.removeAllViews();
 
-                        for (MovieReview review : mReviews) {
-                            View view = inflater.inflate(R.layout.template_review, mReviewGroup, false);
+                            for (MovieReview review : mReviews) {
+                                View view = inflater.inflate(R.layout.template_review, mReviewGroup, false);
 
-                            TextView author = (TextView) view.findViewById(R.id.review_author);
-                            author.setText(review.getAuthor());
+                                TextView author = (TextView) view.findViewById(R.id.review_author);
+                                author.setText(review.getAuthor());
 
-                            TextView content = (TextView) view.findViewById(R.id.review_content);
-                            content.setText(review.getContent());
+                                TextView content = (TextView) view.findViewById(R.id.review_content);
+                                content.setText(review.getContent());
 
-                            mReviewGroup.addView(view);
-                        }
+                                mReviewGroup.addView(view);
+                            }
 
-                        // Related Videos
-                        mRelatedVideosLayout.setVisibility(mRelatedVideos.size() > 0 ? View.VISIBLE : View.GONE);
+                            // Related Videos
+                            mRelatedVideosLayout.setVisibility(mRelatedVideos.size() > 0 ? View.VISIBLE : View.GONE);
 
-                        mRelatedVideoGroup.removeAllViews();
+                            mRelatedVideoGroup.removeAllViews();
 
-                        for (RelatedVideo relatedVideo : mRelatedVideos) {
-                            if (Constants.TEXT_YOUTUBE_SITE.equals(relatedVideo.getSite()) && Constants.TEXT_TRAILER.equals(relatedVideo.getType())) {
-                                View view = inflater.inflate(R.layout.template_related_video, mRelatedVideoGroup, false);
+                            for (RelatedVideo relatedVideo : mRelatedVideos) {
+                                if (Constants.TEXT_YOUTUBE_SITE.equals(relatedVideo.getSite()) && Constants.TEXT_TRAILER.equals(relatedVideo.getType())) {
+                                    View view = inflater.inflate(R.layout.template_related_video, mRelatedVideoGroup, false);
 
-                                final String videoPath = String.format(Constants.TEXT_YOUTUBE_URI, relatedVideo.getKey());
+                                    final String videoPath = String.format(Constants.TEXT_YOUTUBE_URI, relatedVideo.getKey());
 
-                                view.setOnClickListener(new View.OnClickListener() {
-                                    @Override
-                                    public void onClick(View v) {
-                                        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(videoPath));
+                                    view.setOnClickListener(new View.OnClickListener() {
+                                        @Override
+                                        public void onClick(View v) {
+                                            Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(videoPath));
 
-                                        PackageManager manager = activity.getPackageManager();
-                                        List<ResolveInfo> infos = manager.queryIntentActivities(intent, 0);
-                                        if (infos.size() <= 0) {
-                                            Toast.makeText(activity, R.string.error_no_video_player, Toast.LENGTH_SHORT).show();
-                                            return;
+                                            PackageManager manager = activity.getPackageManager();
+                                            List<ResolveInfo> infos = manager.queryIntentActivities(intent, 0);
+                                            if (infos.size() <= 0) {
+                                                Toast.makeText(activity, R.string.error_no_video_player, Toast.LENGTH_SHORT).show();
+                                                return;
+                                            }
+
+                                            startActivity(intent);
                                         }
+                                    });
 
-                                        startActivity(intent);
-                                    }
-                                });
+                                    TextView name = (TextView) view.findViewById(R.id.trailer_name);
+                                    name.setText(relatedVideo.getName());
 
-                                TextView name = (TextView) view.findViewById(R.id.trailer_name);
-                                name.setText(relatedVideo.getName());
-
-                                mRelatedVideoGroup.addView(view);
+                                    mRelatedVideoGroup.addView(view);
+                                }
                             }
                         }
+                    } catch (IllegalStateException e) {
+                        Timber.e(e, null);
                     }
                 }
             });
@@ -249,6 +259,14 @@ public class MovieDetailFragment extends Fragment {
                 mFavorite = true;
             }
 
+            if (getActivity() != null) {
+                getActivity().runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        Toast.makeText(getActivity(), mFavorite ? R.string.favorite_saved : R.string.favorite_removed, Toast.LENGTH_SHORT).show();
+                    }
+                });
+            }
         } finally {
             MovieDatabaseHelper.close(db);
         }
@@ -257,6 +275,11 @@ public class MovieDetailFragment extends Fragment {
     }
 
     public void retrieveReviews(final int pageNumber) {
+
+        if (mMovie == null) {
+            Timber.w("mMovie is null.");
+            return;
+        }
 
         mMovieService.getReviews(mMovie.getId(), pageNumber)
                 .subscribeOn(Schedulers.io())
@@ -292,6 +315,11 @@ public class MovieDetailFragment extends Fragment {
     }
 
     public void retrieveRelatedVideos(final int pageNumber) {
+
+        if (mMovie == null) {
+            Timber.w("mMovie is null.");
+            return;
+        }
 
         mMovieService.getRelatedVideos(mMovie.getId(), pageNumber)
                 .subscribeOn(Schedulers.io())
