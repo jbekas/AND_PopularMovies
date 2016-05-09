@@ -24,6 +24,11 @@
     <string name="favorites_label">Favorites</string>
 
     <string name="mark_as_favorite">Mark as Favorite</string>
-    <string name="vote_average">%s/10</string>
+    <string name="release_year">Released: %s</string>
+    <string name="vote_average">Rating: %s/10</string>
+    <string name="related_videos">Related Videos</string>
+    <string name="reviews">Reviews</string>
+    <string name="error_no_video_player">No video player available.</string>
+    <string name="author">"Author: "</string>
 
 </resources>

@@ -8,4 +8,7 @@ public class Constants {
 
     public enum VIEW_TYPE { MOST_POPULAR, HIGHEST_RATED, FAVORITES }
 
+    public static final String TEXT_YOUTUBE_SITE = "YouTube";
+    public static final String TEXT_YOUTUBE_URI = "https://www.youtube.com/watch?v=%s";
+    public static final String TEXT_TRAILER = "Trailer";
 }

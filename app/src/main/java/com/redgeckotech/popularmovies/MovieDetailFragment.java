@@ -1,8 +1,12 @@
 package com.redgeckotech.popularmovies;
 
+import android.app.Activity;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.PorterDuff;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.ColorInt;
@@ -14,16 +18,21 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.ScrollView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.redgeckotech.popularmovies.db.FavoriteMovieDB;
 import com.redgeckotech.popularmovies.db.MovieDatabaseHelper;
 import com.redgeckotech.popularmovies.model.Movie;
 import com.redgeckotech.popularmovies.model.MovieReview;
 import com.redgeckotech.popularmovies.model.MovieReviewResponse;
+import com.redgeckotech.popularmovies.model.RelatedVideo;
+import com.redgeckotech.popularmovies.model.RelatedVideosResponse;
 import com.redgeckotech.popularmovies.net.MovieService;
 import com.squareup.picasso.Picasso;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.inject.Inject;
 
@@ -34,10 +43,7 @@ import rx.Subscriber;
 import rx.schedulers.Schedulers;
 import timber.log.Timber;
 
-/**
- * A placeholder fragment containing a simple view.
- */
-public class MovieDetailActivityFragment extends Fragment {
+public class MovieDetailFragment extends Fragment {
 
     @Inject MovieService mMovieService;
     @Inject Picasso mPicasso;
@@ -53,19 +59,21 @@ public class MovieDetailActivityFragment extends Fragment {
     @Bind(R.id.vote_average) TextView mVoteAverage;
     @Bind(R.id.favorite_button) FloatingActionButton mFavoriteButton;
     @Bind(R.id.review_layout) ViewGroup mReviewLayout;
-    @Bind(R.id.review_list) ViewGroup mReviewList;
+    @Bind(R.id.review_group) ViewGroup mReviewGroup;
+    @Bind(R.id.related_videos_layout) ViewGroup mRelatedVideosLayout;
+    @Bind(R.id.related_video_group) ViewGroup mRelatedVideoGroup;
 
     private MovieDatabaseHelper mDbHelper;
 
-    //private MovieReviewAdapter mMovieReviewAdapter;
-    //private List<MovieReview> mMovieReviews = new ArrayList<>();
+    private List<MovieReview> mReviews = new ArrayList<>();
+    private List<RelatedVideo> mRelatedVideos = new ArrayList<>();
 
     private boolean mFavorite;
 
     @ColorInt private int activeColor;
     @ColorInt private int inactiveColor;
 
-    public MovieDetailActivityFragment() {
+    public MovieDetailFragment() {
     }
 
     @Override
@@ -131,11 +139,18 @@ public class MovieDetailActivityFragment extends Fragment {
     public void onResume() {
         super.onResume();
         retrieveReviews(1);
+        retrieveRelatedVideos(1);
     }
 
     public void updateUI() {
-        if (getActivity() != null) {
-            getActivity().runOnUiThread(new Runnable() {
+        final Activity activity = getActivity();
+
+        if (activity == null) {
+            Timber.w("Activity no longer exists, returning.");
+            return;
+        } else {
+
+            activity.runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
                     if (mMovie == null) {
@@ -148,7 +163,7 @@ public class MovieDetailActivityFragment extends Fragment {
                         mOverview.setText(mMovie.getOverview());
 
                         String releaseYear = mMovie.getReleaseYear();
-                        mYear.setText(releaseYear);
+                        mYear.setText(getString(R.string.release_year, releaseYear));
                         mYear.setVisibility(releaseYear == null ? View.GONE : View.VISIBLE);
 
                         // Limit decimals to 2, but strip if trailing decimals are 0
@@ -158,6 +173,59 @@ public class MovieDetailActivityFragment extends Fragment {
                         mMovieTitle.setSelected(true);
 
                         mFavoriteButton.setColorFilter(mFavorite ? activeColor : inactiveColor, PorterDuff.Mode.SRC_ATOP);
+
+                        LayoutInflater inflater = activity.getLayoutInflater();
+
+                        // Movie Reviews
+                        mReviewLayout.setVisibility(mReviews.size() > 0 ? View.VISIBLE : View.GONE);
+
+                        mReviewGroup.removeAllViews();
+
+                        for (MovieReview review : mReviews) {
+                            View view = inflater.inflate(R.layout.template_review, mReviewGroup, false);
+
+                            TextView author = (TextView) view.findViewById(R.id.review_author);
+                            author.setText(review.getAuthor());
+
+                            TextView content = (TextView) view.findViewById(R.id.review_content);
+                            content.setText(review.getContent());
+
+                            mReviewGroup.addView(view);
+                        }
+
+                        // Related Videos
+                        mRelatedVideosLayout.setVisibility(mRelatedVideos.size() > 0 ? View.VISIBLE : View.GONE);
+
+                        mRelatedVideoGroup.removeAllViews();
+
+                        for (RelatedVideo relatedVideo : mRelatedVideos) {
+                            if (Constants.TEXT_YOUTUBE_SITE.equals(relatedVideo.getSite()) && Constants.TEXT_TRAILER.equals(relatedVideo.getType())) {
+                                View view = inflater.inflate(R.layout.template_related_video, mRelatedVideoGroup, false);
+
+                                final String videoPath = String.format(Constants.TEXT_YOUTUBE_URI, relatedVideo.getKey());
+
+                                view.setOnClickListener(new View.OnClickListener() {
+                                    @Override
+                                    public void onClick(View v) {
+                                        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(videoPath));
+
+                                        PackageManager manager = activity.getPackageManager();
+                                        List<ResolveInfo> infos = manager.queryIntentActivities(intent, 0);
+                                        if (infos.size() <= 0) {
+                                            Toast.makeText(activity, R.string.error_no_video_player, Toast.LENGTH_SHORT).show();
+                                            return;
+                                        }
+
+                                        startActivity(intent);
+                                    }
+                                });
+
+                                TextView name = (TextView) view.findViewById(R.id.trailer_name);
+                                name.setText(relatedVideo.getName());
+
+                                mRelatedVideoGroup.addView(view);
+                            }
+                        }
                     }
                 }
             });
@@ -190,15 +258,12 @@ public class MovieDetailActivityFragment extends Fragment {
 
     public void retrieveReviews(final int pageNumber) {
 
-        Timber.d("retrieveReviews");
-
         mMovieService.getReviews(mMovie.getId(), pageNumber)
                 .subscribeOn(Schedulers.io())
                 .observeOn(Schedulers.io())
                 .subscribe(new Subscriber<MovieReviewResponse>() {
                     @Override
                     public void onCompleted() {
-                        Timber.d("onCompleted");
                     }
 
                     @Override
@@ -210,27 +275,13 @@ public class MovieDetailActivityFragment extends Fragment {
                     public void onNext(final MovieReviewResponse movieReviewResponse) {
                         try {
 
-
                             Timber.d("Received API MovieReviewResponse");
 
-                            getActivity().runOnUiThread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    mReviewLayout.setVisibility(movieReviewResponse.getMovieReviews().size() > 0 ? View.VISIBLE : View.GONE);
-
-                                    mReviewList.removeAllViews();
-
-                                    for (MovieReview review : movieReviewResponse.getMovieReviews()) {
-                                        String formattedReview = String.format("Author: %s\n\n%s\n\n", review.getAuthor(), review.getContent());
-
-                                        TextView textView = new TextView(getActivity());
-                                        textView.setText(formattedReview);
-                                        mReviewList.addView(textView);
-                                    }
-                                }
-                            });
+                            mReviews = movieReviewResponse.getMovieReviews();
 
                             Timber.d("FetchMovieReviewsTask complete. %d reviews retrieved.", movieReviewResponse.getMovieReviews().size());
+
+                            updateUI();
 
                         } catch (Exception e) {
                             Timber.e(e, null);
@@ -239,4 +290,40 @@ public class MovieDetailActivityFragment extends Fragment {
                     }
                 });
     }
+
+    public void retrieveRelatedVideos(final int pageNumber) {
+
+        mMovieService.getRelatedVideos(mMovie.getId(), pageNumber)
+                .subscribeOn(Schedulers.io())
+                .observeOn(Schedulers.io())
+                .subscribe(new Subscriber<RelatedVideosResponse>() {
+                    @Override
+                    public void onCompleted() {
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                        Timber.e(e, null);
+                    }
+
+                    @Override
+                    public void onNext(final RelatedVideosResponse relatedVideosResponse) {
+                        try {
+
+                            Timber.d("Received API RelatedVideosResponse");
+
+                            mRelatedVideos = relatedVideosResponse.getRelatedVideos();
+
+                            updateUI();
+
+                            Timber.d("FetchRelatedVideosTask complete. %d related videos retrieved.", relatedVideosResponse.getRelatedVideos().size());
+
+                        } catch (Exception e) {
+                            Timber.e(e, null);
+                            // handle errors
+                        }
+                    }
+                });
+    }
+
 }

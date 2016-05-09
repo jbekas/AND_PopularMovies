@@ -4,7 +4,7 @@ import android.content.Context;
 
 import com.redgeckotech.popularmovies.MainActivity;
 import com.redgeckotech.popularmovies.MovieDetailActivity;
-import com.redgeckotech.popularmovies.MovieDetailActivityFragment;
+import com.redgeckotech.popularmovies.MovieDetailFragment;
 import com.redgeckotech.popularmovies.MovieListFragment;
 import com.redgeckotech.popularmovies.MoviesApplication;
 
@@ -21,7 +21,7 @@ public interface AppComponent {
     void inject(MovieDetailActivity mainActivity);
 
     void inject(MovieListFragment fragment);
-    void inject(MovieDetailActivityFragment fragment);
+    void inject(MovieDetailFragment fragment);
 
     //Exposed to sub-graphs.
     Context context();

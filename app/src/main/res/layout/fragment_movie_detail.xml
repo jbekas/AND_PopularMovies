@@ -4,7 +4,7 @@
             xmlns:tools="http://schemas.android.com/tools"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            tools:context="com.redgeckotech.popularmovies.MovieDetailActivityFragment"
+            tools:context=".MovieDetailFragment"
             tools:showIn="@layout/activity_movie_detail">
 
     <android.support.design.widget.CoordinatorLayout
@@ -77,23 +77,15 @@
                         android:layout_height="wrap_content"
                         android:textColor="@color/black"
                         android:textSize="18sp"
+                        android:textAppearance="?android:attr/textAppearanceMedium"
                         tools:text="2015"/>
-
-                    <TextView
-                        android:id="@+id/duration"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:textColor="@color/black"
-                        android:textSize="18sp"
-                        android:visibility="gone"
-                        tools:text="120min"/>
 
                     <TextView
                         android:id="@+id/vote_average"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:textColor="@color/black"
-                        android:textSize="12sp"
+                        android:textAppearance="?android:attr/textAppearanceSmall"
                         tools:text="8.1/10"/>
 
                 </LinearLayout>
@@ -109,33 +101,56 @@
                 android:layout_marginRight="16dp"
                 android:layout_marginTop="16dp"
                 android:textColor="@color/black"
-                android:textSize="18sp"
+                android:textAppearance="?android:attr/textAppearanceMedium"
                 tools:text="This is a very long movie description, this is only a placeholder."/>
+
+            <LinearLayout
+                android:id="@+id/related_videos_layout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_alignWithParentIfMissing="true"
+                android:layout_below="@id/overview"
+                android:layout_margin="16dp"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/related_videos"
+                    android:textAppearance="?android:attr/textAppearanceLarge"/>
+
+                <LinearLayout
+                    android:id="@+id/related_video_group"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"/>
+
+            </LinearLayout>
 
             <LinearLayout
                 android:id="@+id/review_layout"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_below="@id/overview"
+                android:layout_below="@id/related_videos_layout"
                 android:layout_margin="16dp"
                 android:orientation="vertical"
-                android:visibility="gone"
-                >
+                android:visibility="gone">
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Reviews"
+                    android:text="@string/reviews"
                     android:textAppearance="?android:attr/textAppearanceLarge"/>
 
                 <LinearLayout
-                    android:id="@+id/review_list"
+                    android:id="@+id/review_group"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    />
+                    android:orientation="vertical"/>
 
             </LinearLayout>
+
 
         </RelativeLayout>
 

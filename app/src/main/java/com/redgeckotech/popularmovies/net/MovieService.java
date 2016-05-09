@@ -3,6 +3,7 @@ package com.redgeckotech.popularmovies.net;
 
 import com.redgeckotech.popularmovies.model.MovieResponse;
 import com.redgeckotech.popularmovies.model.MovieReviewResponse;
+import com.redgeckotech.popularmovies.model.RelatedVideosResponse;
 
 import retrofit2.Call;
 import retrofit2.Response;
@@ -17,6 +18,8 @@ public interface MovieService {
     @GET("/3/movie/top_rated") Observable<MovieResponse> getTopRated(@Query("page") int page);
 
     @GET("/3/movie/{id}/reviews") Observable<MovieReviewResponse> getReviews(@Path("id") long movieId, @Query("page") int page);
+
+    @GET("/3/movie/{id}/videos") Observable<RelatedVideosResponse> getRelatedVideos(@Path("id") long movieId, @Query("page") int page);
 }
 
 
